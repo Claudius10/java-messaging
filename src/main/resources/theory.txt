@@ -1,0 +1,21 @@
+ActiveMQ -> JMS -> Spring JMS is part of Spring Core
+
+ConnectionFactory -> Connection to interact with JMS Broker
+Embedded broker or not -> spring.activemq.embedded.enabled=false
+
+If broker properties specified, embedded broker is disabled:
+spring.activemq.broker-url=tcp://192.168.1.210:9876
+spring.activemq.user=admin
+spring.activemq.password=secret
+
+Pooling, JmsPoolConnectionFactory:
+spring.activemq.pool.enabled=true
+spring.activemq.pool.max-connections=50
+
+ActiveMQ Properties -> https://docs.spring.io/spring-boot/api/java/org/springframework/boot/autoconfigure/jms/activemq/ActiveMQProperties.html
+
+ActiveMQConnectionFactoryCustomizer -> can be implemented for advanced customizations
+
+RabbitMQ -> AMPQ protocol -> Spring Boot Starter AMQP
+
+Kafka -> Spring Kafka
