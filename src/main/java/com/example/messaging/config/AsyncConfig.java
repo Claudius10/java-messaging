@@ -8,10 +8,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class AsyncConfig {
 
 	@Bean
-	ThreadPoolTaskExecutor publisherTaskExecutor() {
+	ThreadPoolTaskExecutor activeMQTaskExecutor() {
 		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setCorePoolSize(8);
-		taskExecutor.setMaxPoolSize(8);
+		taskExecutor.setThreadNamePrefix("MQExecutor-");
+		taskExecutor.setCorePoolSize(10);
+		taskExecutor.setMaxPoolSize(10);
 		taskExecutor.setQueueCapacity(10000);
 		return taskExecutor;
 	}
