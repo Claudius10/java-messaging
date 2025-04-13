@@ -3,14 +3,14 @@ package com.example.messaging;
 import com.example.messaging.activemq.Publisher;
 import com.example.messaging.activemq.consumer.Consumer;
 import com.example.messaging.activemq.producer.Producer;
-import com.example.messaging.activemq.publisher.JmsQueuePublisher;
 import com.example.messaging.model.Message;
+import com.example.messaging.util.ConnectionToExternalSource;
 import com.example.messaging.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -26,29 +26,27 @@ public class Main {
 
 	private final Properties properties;
 
-	private final JmsTemplate jmsTemplate;
+	private final Publisher jmsQueuePublisher;
+
+	private final ThreadPoolTaskExecutor producerThreadPoolTaskExecutor;
+
+	private final ThreadPoolTaskExecutor consumerThreadPoolTaskExecutor;
 
 	@Scheduled(initialDelay = 1, timeUnit = TimeUnit.SECONDS)
 	public void execute() {
-		BlockingQueue<Message> messageQueue = new ArrayBlockingQueue<>(properties.getQueueCapacity());
-		Publisher jmsQueuePublisher = new JmsQueuePublisher(jmsTemplate, new ActiveMQQueue("testQueue"));
+		jmsQueuePublisher.setDestination(new ActiveMQQueue("testQueue"));
 
-		List<Producer> producers = new ArrayList<>();
-		List<Consumer> consumers = new ArrayList<>();
-
-		for (int i = 0; i < properties.getProducerThreads(); i++) {
-			Producer producer = new Producer(messageQueue, properties.getAmountToProduce());
-			Thread producerThread = new Thread(producer);
-			producerThread.start();
-			producers.add(producer);
+		int connectionCount = 3;
+		List<ConnectionToExternalSource> connections = new ArrayList<>();
+		for (int i = 0; i < connectionCount; i++) {
+			connections.add(new ConnectionToExternalSource(properties.getAmountToProduce()));
 		}
 
-		for (int i = 0; i < properties.getConsumerThreads(); i++) {
-			Consumer consumer = new Consumer(messageQueue, jmsQueuePublisher, properties.getQueueGiveUpDelay());
-			Thread consumerThread = new Thread(consumer);
-			consumerThread.start();
-			consumers.add(consumer);
-		}
+		connections.forEach(connection -> {
+			BlockingQueue<Message> messageQueue = new ArrayBlockingQueue<>(properties.getQueueCapacity());
+			producerThreadPoolTaskExecutor.execute(new Producer(connection, messageQueue));
+			consumerThreadPoolTaskExecutor.execute(new Consumer(messageQueue, jmsQueuePublisher, properties.getQueueGiveUpDelay()));
+		});
 	}
 
 //	private void asyncToArtemisPublisher(List<Message> messages, Publisher publisher) {

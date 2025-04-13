@@ -13,16 +13,13 @@ public class Producer implements Runnable {
 
 	boolean running = false;
 
+	private final ConnectionToExternalSource connectionToExternalSource;
+
 	private final BlockingQueue<Message> messageQueue;
-
-	private ConnectionToExternalSource connectionToExternalSource;
-
-	private final int amountToProduce;
 
 	@Override
 	public void run() {
 		log.info("Producer started");
-		connectionToExternalSource = new ConnectionToExternalSource(amountToProduce);
 		running = true;
 		produce();
 	}

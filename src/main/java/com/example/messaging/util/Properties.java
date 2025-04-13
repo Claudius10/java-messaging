@@ -16,10 +16,4 @@ public class Properties {
 
 	@Value("${queue.messages.giveUp}")
 	private int queueGiveUpDelay;
-
-	@Value("${producer.threads}")
-	private int producerThreads;
-
-	@Value("${consumer.threads}")
-	private int consumerThreads;
 }
