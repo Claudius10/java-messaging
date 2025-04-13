@@ -8,15 +8,15 @@ import org.springframework.stereotype.Component;
 @Getter
 public class Properties {
 
-	@Value("${messages}")
-	private int orders;
+	@Value("${dishes}")
+	private int requestedDishes;
 
-	@Value("${queue.messages.capacity}")
-	private int queueCapacity;
+	@Value("${dishes.capacity}")
+	private int dishesCapacity;
 
-	@Value("${queue.messages.giveUp}")
-	private int queueGiveUpDelay;
+	@Value("${dishes.giveUp}")
+	private int dishesGiveUpDelay;
 
-	@Value("${external.input.pool}")
-	private int externalInputPool;
+	@Value("${customers}")
+	private int customers;
 }

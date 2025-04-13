@@ -20,7 +20,7 @@ public class ChefTask implements Runnable {
 	@Override
 	public void run() {
 		working = true;
-		log.info("ChefTask started work");
+		log.info("Chef started work");
 		work();
 	}
 
@@ -44,11 +44,11 @@ public class ChefTask implements Runnable {
 
 	private void cook(Dish dish) {
 		dish.setCooked(true);
-		log.info("ChefTask cooked dish {}", dish.getId());
+		log.info("Chef cooked dish {}", dish.getId());
 	}
 
 	public void stopWork() {
-		log.info("ChefTask is resting");
+		log.info("Chef is resting");
 		working = false;
 	}
 }

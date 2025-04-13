@@ -45,8 +45,8 @@ public class Kitchen {
 
 		List<Customer> customers = new ArrayList<>();
 
-		for (int i = 0; i < properties.getExternalInputPool(); i++) {
-			customers.add(new Customer(properties.getOrders()));
+		for (int i = 0; i < properties.getCustomers(); i++) {
+			customers.add(new Customer(properties.getRequestedDishes()));
 		}
 
 		List<Future<?>> tasks = new ArrayList<>();
@@ -56,9 +56,9 @@ public class Kitchen {
 		stopWatch.start();
 
 		for (Customer customer : customers) {
-			BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getQueueCapacity());
+			BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getDishesCapacity());
 			tasks.add(chefs.submit(new ChefTask(customer, dishQueue)));
-			tasks.add(servers.submit(new ServerTask(dishQueue, diningHall, serverCart, properties.getQueueGiveUpDelay())));
+			tasks.add(servers.submit(new ServerTask(dishQueue, diningHall, serverCart, properties.getDishesGiveUpDelay())));
 		}
 
 
@@ -79,22 +79,22 @@ public class Kitchen {
 	public void executeSingleCustomer() {
 		ActiveMQQueue diningHall = new ActiveMQQueue("diningHall");
 
-		Customer customer = new Customer(properties.getOrders());
-		BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getQueueCapacity());
+		Customer customer = new Customer(properties.getRequestedDishes());
+		BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getDishesCapacity());
 		List<Future<?>> tasks = new ArrayList<>();
 		StopWatch stopWatch = new StopWatch("Kitchen Tasks");
 
-		int serverThreads = 1;
-		int chefThreads = 1;
+		int chefs = 1;
+		int servers = 1;
 
 		stopWatch.start();
 
-		for (int i = 0; i < chefThreads; i++) {
-			tasks.add(chefs.submit(new ChefTask(customer, dishQueue)));
+		for (int i = 0; i < chefs; i++) {
+			tasks.add(this.chefs.submit(new ChefTask(customer, dishQueue)));
 		}
 
-		for (int i = 0; i < serverThreads; i++) {
-			tasks.add(servers.submit(new ServerTask(dishQueue, diningHall, serverCart, properties.getQueueGiveUpDelay())));
+		for (int i = 0; i < servers; i++) {
+			tasks.add(this.servers.submit(new ServerTask(dishQueue, diningHall, serverCart, properties.getDishesGiveUpDelay())));
 		}
 
 		for (Future<?> task : tasks) {

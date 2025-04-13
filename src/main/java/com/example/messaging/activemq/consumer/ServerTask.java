@@ -28,14 +28,14 @@ public class ServerTask implements Runnable {
 	@Override
 	public void run() {
 		working = true;
-		log.info("ServerTask started work");
+		log.info("Server started work");
 		serve();
 	}
 
 	private void serve() {
 		while (working) {
 			try {
-				Dish dish = completedDishes.poll(delay, TimeUnit.SECONDS);
+				Dish dish = completedDishes.poll(100, TimeUnit.MILLISECONDS);
 
 				if (dish == null) {
 					stopWork();
@@ -47,7 +47,7 @@ public class ServerTask implements Runnable {
 					}
 				}
 			} catch (InterruptedException ex) {
-				log.error("ServerTask interrupted {}", ex.getMessage());
+				log.error("Server interrupted {}", ex.getMessage());
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -66,6 +66,6 @@ public class ServerTask implements Runnable {
 
 	public void stopWork() {
 		working = false;
-		log.info("ServerTask is resting");
+		log.info("Server is resting");
 	}
 }
