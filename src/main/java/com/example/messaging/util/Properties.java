@@ -9,11 +9,14 @@ import org.springframework.stereotype.Component;
 public class Properties {
 
 	@Value("${messages}")
-	private int amountToProduce;
+	private int orders;
 
 	@Value("${queue.messages.capacity}")
 	private int queueCapacity;
 
 	@Value("${queue.messages.giveUp}")
 	private int queueGiveUpDelay;
+
+	@Value("${external.input.pool}")
+	private int externalInputPool;
 }

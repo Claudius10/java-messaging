@@ -9,9 +9,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class Message {
+public class Dish {
 
 	private Long id;
 
-	private String content;
+	private boolean cooked = false;
 }
