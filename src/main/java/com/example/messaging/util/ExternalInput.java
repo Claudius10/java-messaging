@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @Slf4j
-public class ConnectionToExternalSource {
+public class ExternalInput {
 
 	private final List<Message> messages;
 
-	public ConnectionToExternalSource(int amount) {
+	public ExternalInput(int amount) {
 		messages = new ArrayList<>(produceMessages(amount));
 	}
 

@@ -4,7 +4,7 @@ import com.example.messaging.activemq.Publisher;
 import com.example.messaging.activemq.consumer.Consumer;
 import com.example.messaging.activemq.producer.Producer;
 import com.example.messaging.model.Message;
-import com.example.messaging.util.ConnectionToExternalSource;
+import com.example.messaging.util.ExternalInput;
 import com.example.messaging.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,14 +37,14 @@ public class Main {
 		jmsQueuePublisher.setDestination(new ActiveMQQueue("testQueue"));
 
 		int connectionCount = 3;
-		List<ConnectionToExternalSource> connections = new ArrayList<>();
+		List<ExternalInput> externalInputs = new ArrayList<>();
 		for (int i = 0; i < connectionCount; i++) {
-			connections.add(new ConnectionToExternalSource(properties.getAmountToProduce()));
+			externalInputs.add(new ExternalInput(properties.getAmountToProduce()));
 		}
 
-		connections.forEach(connection -> {
+		externalInputs.forEach(input -> {
 			BlockingQueue<Message> messageQueue = new ArrayBlockingQueue<>(properties.getQueueCapacity());
-			producerThreadPoolTaskExecutor.execute(new Producer(connection, messageQueue));
+			producerThreadPoolTaskExecutor.execute(new Producer(input, messageQueue));
 			consumerThreadPoolTaskExecutor.execute(new Consumer(messageQueue, jmsQueuePublisher, properties.getQueueGiveUpDelay()));
 		});
 	}

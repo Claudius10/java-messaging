@@ -1,7 +1,7 @@
 package com.example.messaging.activemq.producer;
 
 import com.example.messaging.model.Message;
-import com.example.messaging.util.ConnectionToExternalSource;
+import com.example.messaging.util.ExternalInput;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +13,7 @@ public class Producer implements Runnable {
 
 	boolean running = false;
 
-	private final ConnectionToExternalSource connectionToExternalSource;
+	private final ExternalInput externalInput;
 
 	private final BlockingQueue<Message> messageQueue;
 
@@ -26,7 +26,7 @@ public class Producer implements Runnable {
 
 	private void produce() {
 		while (running) {
-			Message message = connectionToExternalSource.read();
+			Message message = externalInput.read();
 
 			if (message != null) {
 				log.info("Message received: {}", message.getContent());
