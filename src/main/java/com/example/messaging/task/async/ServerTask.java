@@ -1,4 +1,4 @@
-package com.example.messaging.activemq.consumer;
+package com.example.messaging.task.async;
 
 import com.example.messaging.model.Dish;
 import jakarta.jms.Destination;
@@ -35,10 +35,11 @@ public class ServerTask implements Runnable {
 	private void serve() {
 		while (working) {
 			try {
-				Dish dish = completedDishes.poll(100, TimeUnit.MILLISECONDS);
+				Dish dish = completedDishes.poll(delay, TimeUnit.SECONDS);
 
 				if (dish == null) {
-					stopWork();
+					log.info("All dishes served. Resting...");
+					Thread.sleep(500);
 				} else {
 					try {
 						serve(dish);
@@ -53,12 +54,11 @@ public class ServerTask implements Runnable {
 		}
 	}
 
-
 	private void serve(final Dish dish) throws JmsException {
 		long id = dish.getId();
 		log.info("Serving dish: {}", id);
 		jmsTemplate.send(destination, session -> {
-			TextMessage textMessage = session.createTextMessage("Delicious");
+			TextMessage textMessage = session.createTextMessage("Delicious dish");
 			textMessage.setLongProperty("id", dish.getId());
 			return textMessage;
 		});

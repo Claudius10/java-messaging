@@ -29,6 +29,10 @@ public class Customer {
 		return dish;
 	}
 
+	public void refillDishes(int amount) {
+		dishes.addAll(requestDishes(amount));
+	}
+
 	private List<Dish> requestDishes(int amount) {
 		List<Dish> dishes = new ArrayList<>();
 

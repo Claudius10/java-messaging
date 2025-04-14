@@ -1,4 +1,4 @@
-package com.example.messaging.activemq.producer;
+package com.example.messaging.task.async;
 
 import com.example.messaging.model.Dish;
 import com.example.messaging.util.Customer;
@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -17,6 +18,8 @@ public class ChefTask implements Runnable {
 
 	private final BlockingQueue<Dish> completedDishes;
 
+	private final int delay;
+
 	@Override
 	public void run() {
 		working = true;
@@ -26,18 +29,23 @@ public class ChefTask implements Runnable {
 
 	private void work() {
 		while (working) {
+			try {
+				Dish dish = customer.dish();
 
-			Dish dish = customer.dish();
+				if (dish == null) {
+					log.info("All dishes cooked. Resting...");
+					Thread.sleep(500);
+				} else {
+					cook(dish);
 
-			if (dish == null) {
-				stopWork();
-			} else {
-				cook(dish);
-				try {
-					completedDishes.put(dish);
-				} catch (InterruptedException ex) {
-					log.error("Interrupted", ex);
+					boolean result = completedDishes.offer(dish, delay, TimeUnit.SECONDS);
+
+					if (!result) {
+						log.error("Dish went cold");
+					}
 				}
+			} catch (InterruptedException ex) {
+				log.error("Interrupted", ex);
 			}
 		}
 	}

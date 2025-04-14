@@ -8,22 +8,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class AsyncConfig {
 
 	@Bean
-	ThreadPoolTaskExecutor chefs() {
+	ThreadPoolTaskExecutor threadPool() {
 		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("chef-");
-		taskExecutor.setCorePoolSize(5);
-		taskExecutor.setMaxPoolSize(5);
-		taskExecutor.setQueueCapacity(25);
-		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
-		return taskExecutor;
-	}
-
-	@Bean
-	ThreadPoolTaskExecutor servers() {
-		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("server-");
-		taskExecutor.setCorePoolSize(5);
-		taskExecutor.setMaxPoolSize(5);
+		taskExecutor.setThreadNamePrefix("thread-");
+		taskExecutor.setCorePoolSize(10);
+		taskExecutor.setMaxPoolSize(10);
 		taskExecutor.setQueueCapacity(25);
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		return taskExecutor;
