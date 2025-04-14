@@ -10,14 +10,15 @@ import org.springframework.jms.core.JmsTemplate;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiredArgsConstructor
 @Slf4j
-public class ServerTask implements Runnable {
-
-	boolean working = false;
+public class ServerTask implements Task {
 
 	private final BlockingQueue<Dish> completedDishes;
+
+	private final AtomicInteger counter = new AtomicInteger(0);
 
 	private final Destination destination;
 
@@ -25,21 +26,32 @@ public class ServerTask implements Runnable {
 
 	private final int delay;
 
+	private boolean working = true;
+
+	private boolean cancel = false;
+
 	@Override
-	public void run() {
-		working = true;
+	public Boolean call() {
 		log.info("Server started work");
-		serve();
+		return serve();
 	}
 
-	private void serve() {
-		while (working) {
-			try {
+	private Boolean serve() {
+		try {
+			while (working) {
+
+				if (cancel && completedDishes.isEmpty()) {
+					stop();
+					return working;
+				}
+
 				Dish dish = completedDishes.poll(delay, TimeUnit.SECONDS);
 
+				log.info("Dishes remaining {}", completedDishes.size());
+
 				if (dish == null) {
-					log.info("All dishes served. Resting...");
-					Thread.sleep(500);
+
+
 				} else {
 					try {
 						serve(dish);
@@ -47,11 +59,14 @@ public class ServerTask implements Runnable {
 						log.error("Customer does not like the dish", ex);
 					}
 				}
-			} catch (InterruptedException ex) {
-				log.error("Server interrupted {}", ex.getMessage());
-				Thread.currentThread().interrupt();
 			}
+
+		} catch (InterruptedException ex) {
+			log.error("Server interrupted {}", ex.getMessage());
+			Thread.currentThread().interrupt();
 		}
+
+		return working;
 	}
 
 	private void serve(final Dish dish) throws JmsException {
@@ -62,10 +77,18 @@ public class ServerTask implements Runnable {
 			textMessage.setLongProperty("id", dish.getId());
 			return textMessage;
 		});
+		counter.incrementAndGet();
 	}
 
-	public void stopWork() {
+	@Override
+	public void cancel() {
+		cancel = true;
+		log.info("Server work cancelled");
+	}
+
+	private void stop() {
 		working = false;
-		log.info("Server is resting");
+		log.info("Server shift ended");
+		log.info("Served {} dishes", counter.get());
 	}
 }

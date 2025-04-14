@@ -3,11 +3,13 @@ package com.example.messaging;
 import com.example.messaging.model.Dish;
 import com.example.messaging.task.async.ChefTask;
 import com.example.messaging.task.async.ServerTask;
+import com.example.messaging.task.async.Task;
 import com.example.messaging.util.Customer;
 import com.example.messaging.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -15,9 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +32,12 @@ public class Kitchen {
 
 	private final List<Customer> customers = new ArrayList<>();
 
+	private final List<Task> tasks = new ArrayList<>();
+
+	private final List<Future<?>> kitchenTasks = new ArrayList<>();
+
+	private final ConfigurableApplicationContext context;
+
 	@Scheduled(initialDelay = 1, timeUnit = TimeUnit.SECONDS)
 	public void open() {
 		log.info("Opening kitchen...");
@@ -39,12 +45,31 @@ public class Kitchen {
 		executeSingleCustomer();
 	}
 
-	@Scheduled(initialDelay = 3, fixedRate = 3, timeUnit = TimeUnit.SECONDS)
+	@Scheduled(initialDelay = 3, fixedRate = 25, timeUnit = TimeUnit.SECONDS)
 	public void newOrders() {
 		log.info("Refilling dishes...");
 		for (Customer customer : customers) {
 			customer.refillDishes(properties.getRequestedDishes());
 		}
+	}
+
+	@Scheduled(initialDelay = 60, timeUnit = TimeUnit.SECONDS)
+	public void close() throws ExecutionException, InterruptedException {
+		log.info("Closing kitchen...");
+
+		// cancel all tasks
+		for (Task task : tasks) {
+			task.cancel();
+		}
+
+		// wait for remaining tasks to complete (blocks thread until all tasks complete)
+		for (Future<?> kitchenTask : kitchenTasks) {
+			kitchenTask.get();
+		}
+
+		// shutdown
+		context.close();
+		log.info("Kitchen closed");
 	}
 
 	public void executeSingleCustomer() {
@@ -54,13 +79,15 @@ public class Kitchen {
 
 		BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getDishesCapacity());
 
-		int threads = 1;
+		int threads = 4;
 
 		for (int i = 0; i < threads; i++) {
-			ChefTask chefTask = new ChefTask(customers.getFirst(), dishQueue, properties.getDishesGiveUpDelay());
+			ChefTask chefTask = new ChefTask(dishQueue, customers.getFirst(), properties.getDishesGiveUpDelay());
 			ServerTask serverTask = new ServerTask(dishQueue, diningHall, serverCart, properties.getDishesGiveUpDelay());
-			threadPool.execute(chefTask);
-			threadPool.execute(serverTask);
+			tasks.add(chefTask);
+			tasks.add(serverTask);
+			kitchenTasks.add(threadPool.submit(chefTask));
+			kitchenTasks.add(threadPool.submit(serverTask));
 		}
 	}
 
@@ -74,8 +101,8 @@ public class Kitchen {
 		BlockingQueue<Dish> dishQueue = new ArrayBlockingQueue<>(properties.getDishesCapacity());
 
 		for (Customer customer : customers) {
-			threadPool.execute(new ChefTask(customer, dishQueue, properties.getDishesGiveUpDelay()));
-			threadPool.execute(new ServerTask(dishQueue, diningHall, serverCart, properties.getDishesGiveUpDelay()));
+			threadPool.submit(new ChefTask(dishQueue, customers.getFirst(), properties.getDishesGiveUpDelay()));
+			threadPool.submit(new ServerTask(dishQueue, diningHall, serverCart, properties.getDishesGiveUpDelay()));
 		}
 	}
 }

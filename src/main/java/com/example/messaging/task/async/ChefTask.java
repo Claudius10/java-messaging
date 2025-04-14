@@ -7,34 +7,44 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiredArgsConstructor
 @Slf4j
-public class ChefTask implements Runnable {
-
-	boolean working = false;
-
-	private final Customer customer;
+public class ChefTask implements Task {
 
 	private final BlockingQueue<Dish> completedDishes;
 
+	private final AtomicInteger counter = new AtomicInteger(0);
+
+	private final Customer customer;
+
 	private final int delay;
 
+	private boolean working = true;
+
+	private boolean cancel = false;
+
 	@Override
-	public void run() {
-		working = true;
+	public Boolean call() {
 		log.info("Chef started work");
-		work();
+		return work();
 	}
 
-	private void work() {
-		while (working) {
-			try {
+	private boolean work() {
+		try {
+			while (working) {
+
+				if (cancel) {
+					stop();
+					return working;
+				}
+
 				Dish dish = customer.dish();
 
 				if (dish == null) {
-					log.info("All dishes cooked. Resting...");
-					Thread.sleep(500);
+
+
 				} else {
 					cook(dish);
 
@@ -44,19 +54,31 @@ public class ChefTask implements Runnable {
 						log.error("Dish went cold");
 					}
 				}
-			} catch (InterruptedException ex) {
-				log.error("Interrupted", ex);
 			}
+
+		} catch (InterruptedException ex) {
+			log.error("Interrupted", ex);
+			Thread.currentThread().interrupt();
 		}
+
+		return working;
 	}
 
 	private void cook(Dish dish) {
 		dish.setCooked(true);
 		log.info("Chef cooked dish {}", dish.getId());
+		counter.incrementAndGet();
 	}
 
-	public void stopWork() {
-		log.info("Chef is resting");
+	@Override
+	public void cancel() {
+		cancel = true;
+		log.info("Chef work cancelled");
+	}
+
+	private void stop() {
 		working = false;
+		log.info("Chef shift ended");
+		log.info("Chef cooked {} dishes", counter.get());
 	}
 }

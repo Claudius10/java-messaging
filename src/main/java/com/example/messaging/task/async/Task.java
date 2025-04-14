@@ -1,6 +1,8 @@
 package com.example.messaging.task.async;
 
-public interface Task extends Runnable {
+import java.util.concurrent.Callable;
 
-	void stop();
+public interface Task extends Callable<Boolean> {
+
+	void cancel();
 }
