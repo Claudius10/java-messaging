@@ -50,13 +50,12 @@ public class ServerTask implements Task {
 				log.info("Dishes remaining {}", completedDishes.size());
 
 				if (dish == null) {
-
-
+					//
 				} else {
 					try {
 						serve(dish);
 					} catch (JmsException ex) {
-						log.error("Customer does not like the dish", ex);
+						log.error("Customer does not like the get", ex);
 					}
 				}
 			}
@@ -71,9 +70,9 @@ public class ServerTask implements Task {
 
 	private void serve(final Dish dish) throws JmsException {
 		long id = dish.getId();
-		log.info("Serving dish: {}", id);
+		log.info("Serving get: {}", id);
 		jmsTemplate.send(destination, session -> {
-			TextMessage textMessage = session.createTextMessage("Delicious dish");
+			TextMessage textMessage = session.createTextMessage("Delicious get");
 			textMessage.setLongProperty("id", dish.getId());
 			return textMessage;
 		});

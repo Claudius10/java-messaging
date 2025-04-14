@@ -19,4 +19,7 @@ public class Properties {
 
 	@Value("${customers}")
 	private int customers;
+
+	@Value("${destination}")
+	private String destination;
 }

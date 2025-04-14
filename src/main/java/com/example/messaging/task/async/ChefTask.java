@@ -1,7 +1,7 @@
 package com.example.messaging.task.async;
 
 import com.example.messaging.model.Dish;
-import com.example.messaging.util.Customer;
+import com.example.messaging.model.Dishes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +17,7 @@ public class ChefTask implements Task {
 
 	private final AtomicInteger counter = new AtomicInteger(0);
 
-	private final Customer customer;
+	private final Dishes dishes;
 
 	private final int delay;
 
@@ -40,11 +40,10 @@ public class ChefTask implements Task {
 					return working;
 				}
 
-				Dish dish = customer.dish();
+				Dish dish = dishes.get();
 
 				if (dish == null) {
-
-
+					// wait
 				} else {
 					cook(dish);
 
@@ -66,7 +65,7 @@ public class ChefTask implements Task {
 
 	private void cook(Dish dish) {
 		dish.setCooked(true);
-		log.info("Chef cooked dish {}", dish.getId());
+		log.info("Chef cooked get {}", dish.getId());
 		counter.incrementAndGet();
 	}
 

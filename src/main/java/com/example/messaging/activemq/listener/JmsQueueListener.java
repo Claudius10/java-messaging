@@ -13,7 +13,7 @@
 //
 //	@JmsListener(destination = "testQueue", concurrency = "10")
 //	public void receive(String content) {
-//		Dish dish = Dish.builder().withContent(content).build();
-//		log.info("Received message: {}", dish.getContent());
+//		Dish get = Dish.builder().withContent(content).build();
+//		log.info("Received message: {}", get.getContent());
 //	}
 //}

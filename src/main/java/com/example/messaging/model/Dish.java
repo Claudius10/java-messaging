@@ -13,5 +13,5 @@ public class Dish {
 
 	private Long id;
 
-	private boolean cooked = false;
+	private boolean cooked;
 }
