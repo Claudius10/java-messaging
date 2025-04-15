@@ -11,9 +11,8 @@ public class Dishes {
 
 	private final List<Dish> dishes;
 
-	public Dishes(int amount) {
-		dishes = new ArrayList<>(amount);
-		generateDishes(amount);
+	public Dishes() {
+		dishes = new ArrayList<>();
 	}
 
 	public Dish get() {
@@ -29,11 +28,7 @@ public class Dishes {
 		return dish;
 	}
 
-	public void refillDishes(int amount) {
-		generateDishes(amount);
-	}
-
-	private void generateDishes(int amount) {
+	public void generateDishes(int amount) {
 		for (long i = 0; i < amount; i++) {
 			Dish dish = Dish.builder().withId(i).withCooked(false).build();
 			dishes.add(dish);

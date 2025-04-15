@@ -11,7 +11,7 @@ public class AsyncConfig {
 	ThreadPoolTaskScheduler workers() {
 		ThreadPoolTaskScheduler taskExecutor = new ThreadPoolTaskScheduler();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setPoolSize(10);
+		taskExecutor.setPoolSize(25);
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		return taskExecutor;
 	}

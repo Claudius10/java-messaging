@@ -9,7 +9,7 @@ public class Customer {
 
 	private final Dishes dishes;
 
-	public Customer(int dishesRequested) {
-		dishes = new Dishes(dishesRequested);
+	public Customer() {
+		dishes = new Dishes();
 	}
 }

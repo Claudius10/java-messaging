@@ -24,55 +24,50 @@ public class ServerTask implements Task {
 
 	private final JmsTemplate jmsTemplate;
 
-	private final int delay;
-
-	private boolean working = true;
+	private final int pollTimeOut;
 
 	private boolean cancel = false;
 
 	@Override
-	public Boolean call() {
+	public void run() {
 		log.info("Server started work");
-		return serve();
+		startWork();
 	}
 
-	private Boolean serve() {
+	private void startWork() {
 		try {
-			while (working) {
+			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
-					stop();
-					return working;
+					log.info("Server shift ended");
+					log.info("Served {} dishes", counter.get());
+					break;
 				}
-
-				Dish dish = completedDishes.poll(delay, TimeUnit.SECONDS);
 
 				log.info("Dishes remaining {}", completedDishes.size());
 
-				if (dish == null) {
-					//
-				} else {
+				Dish dish = completedDishes.poll(pollTimeOut, TimeUnit.SECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
+
+				if (dish != null) {
 					try {
 						serve(dish);
 					} catch (JmsException ex) {
-						log.error("Customer does not like the get", ex);
+						log.error("Customer does not like the dish", ex);
 					}
 				}
 			}
 
 		} catch (InterruptedException ex) {
-			log.error("Server interrupted {}", ex.getMessage());
+			log.error("Unexpected Interruption", ex);
 			Thread.currentThread().interrupt();
 		}
-
-		return working;
 	}
 
 	private void serve(final Dish dish) throws JmsException {
 		long id = dish.getId();
-		log.info("Serving get: {}", id);
+		log.info("Serving dish: {}", id);
 		jmsTemplate.send(destination, session -> {
-			TextMessage textMessage = session.createTextMessage("Delicious get");
+			TextMessage textMessage = session.createTextMessage("Delicious dish");
 			textMessage.setLongProperty("id", dish.getId());
 			return textMessage;
 		});
@@ -82,12 +77,5 @@ public class ServerTask implements Task {
 	@Override
 	public void cancel() {
 		cancel = true;
-		log.info("Server work cancelled");
-	}
-
-	private void stop() {
-		working = false;
-		log.info("Server shift ended");
-		log.info("Served {} dishes", counter.get());
 	}
 }

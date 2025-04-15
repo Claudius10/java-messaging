@@ -15,10 +15,10 @@ public class Properties {
 	private int dishesCapacity;
 
 	@Value("${dishes.giveUp}")
-	private int dishesGiveUpDelay;
+	private int pollTimeOut;
 
 	@Value("${customers}")
-	private int customers;
+	private int amountOfCustomers;
 
 	@Value("${destination}")
 	private String destination;
