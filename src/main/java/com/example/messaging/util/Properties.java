@@ -17,8 +17,11 @@ public class Properties {
 	@Value("${dishes.giveUp}")
 	private int pollTimeOut;
 
-	@Value("${customers}")
-	private int amountOfCustomers;
+	@Value("${customer.maxCapacity}")
+	private int customerMaxCapacity;
+
+	@Value("${customer.greetTimeout}")
+	private int customerGreetTimeOut;
 
 	@Value("${destination}")
 	private String destination;

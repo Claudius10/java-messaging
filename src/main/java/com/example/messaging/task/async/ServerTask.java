@@ -35,6 +35,7 @@ public class ServerTask implements Task {
 	}
 
 	private void startWork() {
+		log.info("Starting work!");
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
 
