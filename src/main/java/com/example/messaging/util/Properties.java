@@ -22,7 +22,4 @@ public class Properties {
 
 	@Value("${customer.greetTimeout}")
 	private int customerGreetTimeOut;
-
-	@Value("${destination}")
-	private String destination;
 }

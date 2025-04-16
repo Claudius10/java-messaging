@@ -1,17 +1,16 @@
 package com.example.messaging;
 
-import com.example.messaging.model.Dish;
+import com.example.messaging.exception.MyExceptionListener;
 import com.example.messaging.task.async.ChefTask;
 import com.example.messaging.task.async.ServerTask;
 import com.example.messaging.task.async.Task;
+import com.example.messaging.util.JmsConnection;
+import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.Properties;
-import jakarta.jms.Destination;
+import jakarta.jms.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
-import org.apache.activemq.artemis.jms.client.ActiveMQTopic;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -29,63 +29,73 @@ public class Restaurant {
 
 	private final Properties properties;
 
+	private final JmsProperties jmsProperties;
+
 	private final ThreadPoolTaskScheduler workers;
 
-	private final JmsTemplate serverCart;
+	private final ConnectionFactory jmsPoolConnectionFactory;
 
-	private List<Task> tasks;
+//	private final JmsTemplate jmsTemplate;
 
-	private List<Future<?>> runningTasks;
+	private List<Task> chefTasks;
 
-	private Destination table;
+	private List<Task> serverTasks;
 
-	private BlockingQueue<Dish> dishesQueue;
+	private List<Future<?>> runningTasks; // as an interrupt mechanism
+
+	private BlockingQueue<Long> dishesQueue;
 
 	@Scheduled(initialDelay = 1, timeUnit = TimeUnit.SECONDS)
 	public void open() {
 		log.info("Opening restaurant...");
 		int maxCustomers = properties.getCustomerMaxCapacity();
-		preparations(properties.getDishesCapacity(), properties.getDestination(), maxCustomers);
-		for (int i = 0; i < maxCustomers; i++) {
-			startWork();
-		}
+		preparations(properties.getDishesCapacity(), maxCustomers);
+		startWork(maxCustomers);
 	}
 
-	private void preparations(int dishesCapacity, String destination, int maxCustomers) {
+	@Scheduled(initialDelay = 10, timeUnit = TimeUnit.SECONDS)
+	public void close() {
+		stop();
+		printStats();
+		restaurant.close();
+		log.info("Restaurant closed");
+	}
+
+	public void preparations(int dishesCapacity, int maxCustomers) {
 		log.info("Preparing restaurant...");
-		dishesQueue = new ArrayBlockingQueue<>(dishesCapacity);
-
-		if (destination.contains("queue")) {
-			table = new ActiveMQQueue(destination);
-		} else {
-			table = new ActiveMQTopic(destination);
-		}
-
-		tasks = new ArrayList<>(maxCustomers);
+		dishesQueue = new LinkedBlockingDeque<>(dishesCapacity);
+		chefTasks = new ArrayList<>(maxCustomers);
+		serverTasks = new ArrayList<>(maxCustomers);
 		runningTasks = new ArrayList<>(maxCustomers);
 	}
 
-	private void startWork() {
-		ChefTask chefTask = new ChefTask(dishesQueue, properties.getRequestedDishes(), properties.getCustomerGreetTimeOut());
-		ServerTask serverTask = new ServerTask(dishesQueue, table, serverCart, properties.getPollTimeOut());
-		tasks.add(chefTask);
-		tasks.add(serverTask);
-		runningTasks.add(workers.submit(chefTask));
-		runningTasks.add(workers.submit(serverTask));
-	}
+	public void startWork(int forAmountOfCustomers) {
 
-	@Scheduled(initialDelay = 30, timeUnit = TimeUnit.SECONDS)
-	public void close() {
-		stop();
-		restaurant.close();
-		log.info("Restaurant closed");
+		final CountDownLatch startGate = new CountDownLatch(1);
+
+		for (int i = 0; i < forAmountOfCustomers; i++) {
+			ChefTask chefTask = new ChefTask(startGate, dishesQueue, properties.getRequestedDishes(), properties.getCustomerGreetTimeOut());
+			chefTasks.add(chefTask);
+			runningTasks.add(workers.submit(chefTask));
+
+			JmsConnection jmsConnection = new JmsConnection();
+			jmsConnection.connect(jmsPoolConnectionFactory, new MyExceptionListener(), jmsProperties.getDestination());
+
+			ServerTask serverTask = new ServerTask(startGate, dishesQueue, jmsConnection, properties.getPollTimeOut());
+			serverTasks.add(serverTask);
+			runningTasks.add(workers.submit(serverTask));
+		}
+
+		// begin
+		startGate.countDown();
 	}
 
 	public void stop() {
 		log.info("Closing restaurant...");
 
-		// cancel all tasks
-		for (Task task : tasks) {
+		List<Task> allTasks = Stream.concat(chefTasks.stream(), serverTasks.stream()).toList();
+
+		for (Task task : allTasks) {
 			task.cancel();
 		}
 
@@ -99,5 +109,17 @@ public class Restaurant {
 				log.error("Task was interrupted", ex);
 			}
 		}
+	}
+
+	public void printStats() {
+		int cookedInDishes = chefTasks.stream().map(Task::getInCount).reduce(0, Integer::sum);
+		int servedInDishes = serverTasks.stream().map(Task::getInCount).reduce(0, Integer::sum);
+		int cookedOutDishes = chefTasks.stream().map(Task::getOutCount).reduce(0, Integer::sum);
+		int servedOutDishes = serverTasks.stream().map(Task::getOutCount).reduce(0, Integer::sum);
+
+		log.info("In Cooked {} dishes", cookedInDishes);
+		log.info("Out Cooked {} dishes", cookedOutDishes);
+		log.info("In Served {} dishes", servedInDishes);
+		log.info("Out Served {} dishes", servedOutDishes);
 	}
 }

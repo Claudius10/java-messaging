@@ -1,6 +1,7 @@
-package com.example.messaging.model;
+package com.example.messaging.util;
 
 import com.example.messaging.exception.CustomerGreetException;
+import com.example.messaging.model.Dish;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -32,7 +33,6 @@ public class Customer {
 
 		return dish;
 	}
-
 
 	public void greet() {
 		log.info("Getting customer order...");

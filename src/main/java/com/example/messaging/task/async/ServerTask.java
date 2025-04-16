@@ -1,14 +1,12 @@
 package com.example.messaging.task.async;
 
-import com.example.messaging.model.Dish;
-import jakarta.jms.Destination;
-import jakarta.jms.TextMessage;
+import com.example.messaging.util.JmsConnection;
+import jakarta.jms.JMSException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jms.JmsException;
-import org.springframework.jms.core.JmsTemplate;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,13 +14,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ServerTask implements Task {
 
-	private final BlockingQueue<Dish> completedDishes;
+	private final CountDownLatch startGate;
 
-	private final AtomicInteger counter = new AtomicInteger(0);
+	private final BlockingQueue<Long> completedDishes;
 
-	private final Destination destination;
+	private final AtomicInteger in = new AtomicInteger(0);
 
-	private final JmsTemplate jmsTemplate;
+	private final AtomicInteger out = new AtomicInteger(0);
+
+	private final JmsConnection jmsConnection;
+
+//	private final JmsTemplate jmsTemplate;
 
 	private final int pollTimeOut;
 
@@ -30,53 +32,63 @@ public class ServerTask implements Task {
 
 	@Override
 	public void run() {
-		log.info("Server started work");
 		startWork();
 	}
 
 	private void startWork() {
-		log.info("Starting work!");
 		try {
+			log.info("Waiting on coworkers...");
+			startGate.await();
+			log.info("All coworkers ready, starting work!");
+
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
 					log.info("Server shift ended");
-					log.info("Served {} dishes", counter.get());
 					break;
 				}
 
-				log.info("Dishes remaining {}", completedDishes.size());
-
-				Dish dish = completedDishes.poll(pollTimeOut, TimeUnit.SECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
+				Long dish = completedDishes.poll(pollTimeOut, TimeUnit.MILLISECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
 
 				if (dish != null) {
 					try {
+						in.incrementAndGet();
 						serve(dish);
-					} catch (JmsException ex) {
+						out.incrementAndGet();
+					} catch (JMSException ex) {
 						log.error("Customer does not like the dish", ex);
 					}
+				} else {
+					// wait
 				}
 			}
-
 		} catch (InterruptedException ex) {
 			log.error("Unexpected Interruption", ex);
 			Thread.currentThread().interrupt();
 		}
 	}
 
-	private void serve(final Dish dish) throws JmsException {
-		long id = dish.getId();
-		log.info("Serving dish: {}", id);
-		jmsTemplate.send(destination, session -> {
-			TextMessage textMessage = session.createTextMessage("Delicious dish");
-			textMessage.setLongProperty("id", dish.getId());
-			return textMessage;
-		});
-		counter.incrementAndGet();
+	private void serve(long id) throws JMSException {
+		jmsConnection.send(id);
+//		jmsTemplate.send(session -> {
+//			TextMessage textMessage = session.createTextMessage("Delicious Dish");
+//			textMessage.setLongProperty("id", id);
+//			return textMessage;
+//		});
 	}
 
 	@Override
 	public void cancel() {
 		cancel = true;
+	}
+
+	@Override
+	public int getInCount() {
+		return in.get();
+	}
+
+	@Override
+	public int getOutCount() {
+		return out.get();
 	}
 }
