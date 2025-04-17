@@ -1,4 +1,4 @@
-package com.example.messaging.producer;
+package com.example.messaging.jms.producer;
 
 import jakarta.jms.JMSContext;
 import jakarta.jms.JMSException;

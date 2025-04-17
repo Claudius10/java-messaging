@@ -1,4 +1,4 @@
-package com.example.messaging.jmsTwo;
+package com.example.messaging.jms;
 
 import jakarta.jms.*;
 import org.springframework.stereotype.Component;

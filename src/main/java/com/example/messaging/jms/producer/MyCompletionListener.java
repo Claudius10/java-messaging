@@ -1,4 +1,4 @@
-package com.example.messaging.producer;
+package com.example.messaging.jms.producer;
 
 import jakarta.jms.CompletionListener;
 import jakarta.jms.Message;

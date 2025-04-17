@@ -1,4 +1,4 @@
-package com.example.messaging.producer;
+package com.example.messaging.jms.producer;
 
 import jakarta.jms.*;
 import lombok.extern.slf4j.Slf4j;

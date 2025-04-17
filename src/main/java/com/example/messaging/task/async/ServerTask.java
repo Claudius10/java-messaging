@@ -1,7 +1,7 @@
 package com.example.messaging.task.async;
 
 import com.example.messaging.model.Dish;
-import com.example.messaging.producer.Producer;
+import com.example.messaging.jms.producer.Producer;
 import jakarta.jms.JMSException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
