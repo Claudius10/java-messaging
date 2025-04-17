@@ -2,12 +2,14 @@ package com.example.messaging.util;
 
 import com.example.messaging.config.MyCompletionListener;
 import jakarta.jms.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
-import org.apache.activemq.artemis.jms.client.ActiveMQTopic;
 
 @Slf4j
+@RequiredArgsConstructor
 public class JmsConnection {
+
+	private final JmsProperties jmsProperties;
 
 	private JMSContext jmsContext;
 
@@ -22,18 +24,17 @@ public class JmsConnection {
 	}
 
 	public void connect(ConnectionFactory jmsConnectionFactory, ExceptionListener exceptionListener, String destinationName) {
-		jmsContext = jmsConnectionFactory.createContext();
+		jmsContext = jmsConnectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
+		jmsContext.setExceptionListener(exceptionListener);
 		jmsProducer = jmsContext.createProducer();
-		jmsProducer.setAsync(new MyCompletionListener()); // --> allows receiving ack async so no blocking on send
-		destination = jmsContext.createQueue(destinationName);
-		log.info("Connected to Artemis Broker");
-	}
+		jmsProducer.setAsync(new MyCompletionListener()); // allows receiving ack async, so no blocking on send
 
-	private Destination resolveDestination(String destination) {
-		if (destination.contains("queue")) {
-			return new ActiveMQQueue(destination);
+		if (destinationName.contains("queue")) {
+			destination = jmsContext.createQueue(destinationName);
 		} else {
-			return new ActiveMQTopic(destination);
+			destination = jmsContext.createTopic(destinationName);
 		}
+
+		log.info("Connected to Artemis Broker");
 	}
 }
