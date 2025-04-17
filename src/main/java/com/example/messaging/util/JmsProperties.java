@@ -20,4 +20,6 @@ public class JmsProperties {
 	private String maxConnections;
 
 	private String destination;
+
+	private String factory;
 }

@@ -1,13 +1,19 @@
 package com.example.messaging;
 
-import com.example.messaging.exception.MyExceptionListener;
+import com.example.messaging.jmsTwo.JmsConnectionFactory;
+import com.example.messaging.model.Dish;
+import com.example.messaging.producer.JmsProducer;
+import com.example.messaging.producer.MyCompletionListener;
+import com.example.messaging.producer.MyExceptionListener;
+import com.example.messaging.producer.Producer;
 import com.example.messaging.task.async.ChefTask;
 import com.example.messaging.task.async.ServerTask;
 import com.example.messaging.task.async.Task;
-import com.example.messaging.util.JmsConnection;
 import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.Properties;
-import jakarta.jms.ConnectionFactory;
+import jakarta.annotation.PostConstruct;
+import jakarta.jms.DeliveryMode;
+import jakarta.jms.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -33,19 +39,19 @@ public class Restaurant {
 
 	private final ThreadPoolTaskScheduler workers;
 
-	private final ConnectionFactory jmsPoolConnectionFactory;
-
-//	private final JmsTemplate jmsTemplate;
+	private final JmsConnectionFactory connectionFactory;
 
 	private List<Task> chefTasks;
 
 	private List<Task> serverTasks;
 
-	private List<Future<?>> runningTasks; // as an interrupt mechanism
+	private List<Future<?>> runningTasks; // as an interruption mechanism
 
-	private BlockingQueue<Long> dishesQueue;
+	private BlockingQueue<Dish> dishesQueue;
 
-	@Scheduled(initialDelay = 1, timeUnit = TimeUnit.SECONDS)
+	private final CountDownLatch startGate = new CountDownLatch(1);
+
+	@PostConstruct
 	public void open() {
 		log.info("Opening restaurant...");
 		int maxCustomers = properties.getCustomerMaxCapacity();
@@ -70,24 +76,29 @@ public class Restaurant {
 	}
 
 	public void startWork(int forAmountOfCustomers) {
+		createConsumers(forAmountOfCustomers);
+		createProducers(forAmountOfCustomers);
+		startGate.countDown();
+	}
 
-		final CountDownLatch startGate = new CountDownLatch(1);
-
-		for (int i = 0; i < forAmountOfCustomers; i++) {
+	private void createConsumers(int amount) {
+		for (int i = 0; i < amount; i++) {
 			ChefTask chefTask = new ChefTask(startGate, dishesQueue, properties.getRequestedDishes(), properties.getCustomerGreetTimeOut());
 			chefTasks.add(chefTask);
 			runningTasks.add(workers.submit(chefTask));
+		}
+	}
 
-			JmsConnection jmsConnection = new JmsConnection();
-			jmsConnection.connect(jmsPoolConnectionFactory, new MyExceptionListener(), jmsProperties.getDestination());
-
-			ServerTask serverTask = new ServerTask(startGate, dishesQueue, jmsConnection, properties.getPollTimeOut());
+	private void createProducers(int amount) {
+		for (int i = 0; i < amount; i++) {
+			Producer jmsProducer = new JmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
+			jmsProducer.getContext().setExceptionListener(new MyExceptionListener());
+			jmsProducer.getProducer().setAsync(new MyCompletionListener());
+			jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
+			ServerTask serverTask = new ServerTask(startGate, dishesQueue, jmsProducer, properties.getPollTimeOut());
 			serverTasks.add(serverTask);
 			runningTasks.add(workers.submit(serverTask));
 		}
-
-		// begin
-		startGate.countDown();
 	}
 
 	public void stop() {
@@ -99,7 +110,7 @@ public class Restaurant {
 			task.cancel();
 		}
 
-		// wait for remaining tasks to complete (blocks thread until all tasks complete)
+		// block thread until all tasks complete
 		for (Future<?> kitchenTask : runningTasks) {
 			try {
 				kitchenTask.get();

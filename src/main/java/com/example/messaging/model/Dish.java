@@ -14,4 +14,6 @@ public class Dish {
 	private Long id;
 
 	private boolean cooked;
+
+	private String name;
 }

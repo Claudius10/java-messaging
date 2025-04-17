@@ -15,10 +15,19 @@ public class JmsConfig {
 	private final JmsProperties jmsProperties;
 
 	@Bean
-	ConnectionFactory jmsPoolConnectionFactory() {
+	ConnectionFactory connectionFactory() {
 		JmsPoolConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
-		connectionFactory.setConnectionFactory(new ActiveMQConnectionFactory());
+		connectionFactory.setConnectionFactory(resolveConnectionFactory(jmsProperties.getBrokerUrl()));
 		connectionFactory.setMaxConnections(Integer.parseInt(jmsProperties.getMaxConnections()));
 		return connectionFactory;
+	}
+
+	private ConnectionFactory resolveConnectionFactory(String url) {
+		switch (jmsProperties.getFactory()) {
+			case "ActiveMQConnectionFactory":
+				return new ActiveMQConnectionFactory(url);
+			default:
+				return new ActiveMQConnectionFactory(url);
+		}
 	}
 }

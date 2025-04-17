@@ -34,6 +34,7 @@ public class Customer {
 		return dish;
 	}
 
+	// a.k.a sending a Heartbeat
 	public void greet() {
 		log.info("Getting customer order...");
 		if (new Random().nextBoolean()) {
@@ -44,10 +45,14 @@ public class Customer {
 	}
 
 	public void generateDishes() {
-		log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
-		for (long i = 0; i < amountOfDishesToGenerate; i++) {
-			Dish dish = Dish.builder().withId(i).withCooked(false).build();
-			dishes.add(dish);
+		if (new Random().nextBoolean()) {
+			log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
+			for (long i = 0; i < amountOfDishesToGenerate; i++) {
+				Dish dish = Dish.builder().withId(i).withCooked(false).withName("Delicious dish").build();
+				dishes.add(dish);
+			}
+		} else {
+			log.info("Customer is satisfied for the time being.");
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package com.example.messaging.task.async;
 
-import com.example.messaging.util.JmsConnection;
+import com.example.messaging.model.Dish;
+import com.example.messaging.producer.Producer;
 import jakarta.jms.JMSException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,19 +17,19 @@ public class ServerTask implements Task {
 
 	private final CountDownLatch startGate;
 
-	private final BlockingQueue<Long> completedDishes;
-
 	private final AtomicInteger in = new AtomicInteger(0);
 
 	private final AtomicInteger out = new AtomicInteger(0);
 
-	private final JmsConnection jmsConnection;
+	private final BlockingQueue<Dish> completedDishes;
 
-//	private final JmsTemplate jmsTemplate;
+	private final Producer jmsProducer;
 
 	private final int pollTimeOut;
 
 	private boolean cancel = false;
+
+	private long timeOfLastDish = 0;
 
 	@Override
 	public void run() {
@@ -48,10 +49,11 @@ public class ServerTask implements Task {
 					break;
 				}
 
-				Long dish = completedDishes.poll(pollTimeOut, TimeUnit.MILLISECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
+				Dish dish = completedDishes.poll(pollTimeOut, TimeUnit.MILLISECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
 
 				if (dish != null) {
 					try {
+						timeOfLastDish = System.currentTimeMillis();
 						in.incrementAndGet();
 						serve(dish);
 						out.incrementAndGet();
@@ -68,13 +70,8 @@ public class ServerTask implements Task {
 		}
 	}
 
-	private void serve(long id) throws JMSException {
-		jmsConnection.send(id);
-//		jmsTemplate.send(session -> {
-//			TextMessage textMessage = session.createTextMessage("Delicious Dish");
-//			textMessage.setLongProperty("id", id);
-//			return textMessage;
-//		});
+	private void serve(Dish dish) throws JMSException {
+		jmsProducer.sendTextMessage(dish.getId(), dish.getName());
 	}
 
 	@Override

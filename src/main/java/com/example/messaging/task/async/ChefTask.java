@@ -15,11 +15,11 @@ public class ChefTask implements Task {
 
 	private final CountDownLatch startGate;
 
-	private final BlockingQueue<Long> completedDishes;
-
 	private final AtomicInteger in = new AtomicInteger(0);
 
 	private final AtomicInteger out = new AtomicInteger(0);
+
+	private final BlockingQueue<Dish> completedDishes;
 
 	private final Customer customer;
 
@@ -29,7 +29,7 @@ public class ChefTask implements Task {
 
 	private long timeOfLastDish = 0;
 
-	public ChefTask(CountDownLatch startGate, BlockingQueue<Long> completedDishes, int amountOfDishesToGenerate, int greetTimeOut) {
+	public ChefTask(CountDownLatch startGate, BlockingQueue<Dish> completedDishes, int amountOfDishesToGenerate, int greetTimeOut) {
 		this.startGate = startGate;
 		this.completedDishes = completedDishes;
 		this.customer = new Customer(amountOfDishesToGenerate);
@@ -57,27 +57,26 @@ public class ChefTask implements Task {
 
 				if (dish != null) {
 					try {
+						timeOfLastDish = System.currentTimeMillis();
 						in.incrementAndGet();
 						cook(dish);
 						out.incrementAndGet();
-					} catch (Exception ex) {
-						log.error(ex.getMessage());
+					} catch (IllegalArgumentException | ClassCastException ex) {
+						log.error("Can't add dish {} to queue: {}", dish.getId(), ex.getMessage());
 					}
 				} else {
 					handleIdle();
 				}
 			}
 
-		} catch (Exception ex) {
-			log.error("Exception", ex);
+		} catch (InterruptedException ex) {
+			log.error("Chef interrupted: {}", ex.getMessage());
 			Thread.currentThread().interrupt();
 		}
 	}
 
-	private void cook(Dish dish) throws Exception {
-		long id = dish.getId();
-		completedDishes.put(id); // wait: can't have customers go hungry. also, if cancel becomes true, put last dish and end
-		timeOfLastDish = System.currentTimeMillis();
+	private void cook(Dish dish) throws InterruptedException {
+		completedDishes.put(dish); // wait: can't have customers go hungry. also, if cancel becomes true, put last dish and end
 	}
 
 	private void handleIdle() {
