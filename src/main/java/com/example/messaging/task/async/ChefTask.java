@@ -1,13 +1,14 @@
 package com.example.messaging.task.async;
 
 import com.example.messaging.exception.CustomerGreetException;
-import com.example.messaging.util.Customer;
 import com.example.messaging.model.Dish;
+import com.example.messaging.util.Customer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -18,6 +19,8 @@ public class ChefTask implements Task {
 	private final AtomicInteger in = new AtomicInteger(0);
 
 	private final AtomicInteger out = new AtomicInteger(0);
+
+	private final AtomicBoolean isWorking = new AtomicBoolean(false);
 
 	private final BlockingQueue<Dish> completedDishes;
 
@@ -71,6 +74,7 @@ public class ChefTask implements Task {
 
 		} catch (InterruptedException ex) {
 			log.error("Chef interrupted: {}", ex.getMessage());
+			isWorking.compareAndSet(true, false);
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -85,7 +89,9 @@ public class ChefTask implements Task {
 		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {
 			try {
 				customer.greet();
+				isWorking.compareAndSet(false, true);
 			} catch (CustomerGreetException ex) {
+				isWorking.compareAndSet(true, false);
 				log.warn("Customer response: '{}'", ex.getMessage());
 			}
 		}
@@ -94,6 +100,11 @@ public class ChefTask implements Task {
 	@Override
 	public void cancel() {
 		cancel = true;
+	}
+
+	@Override
+	public boolean isWorking() {
+		return isWorking.get();
 	}
 
 	@Override

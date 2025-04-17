@@ -59,7 +59,7 @@ public class Restaurant {
 		startWork(maxCustomers);
 	}
 
-	@Scheduled(initialDelay = 10, timeUnit = TimeUnit.SECONDS)
+	@Scheduled(initialDelay = 30, timeUnit = TimeUnit.SECONDS)
 	public void close() {
 		stop();
 		printStats();

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiredArgsConstructor
@@ -20,6 +21,8 @@ public class ServerTask implements Task {
 	private final AtomicInteger in = new AtomicInteger(0);
 
 	private final AtomicInteger out = new AtomicInteger(0);
+
+	private final AtomicBoolean isWorking = new AtomicBoolean(false);
 
 	private final BlockingQueue<Dish> completedDishes;
 
@@ -41,7 +44,7 @@ public class ServerTask implements Task {
 			log.info("Waiting on coworkers...");
 			startGate.await();
 			log.info("All coworkers ready, starting work!");
-
+			isWorking.getAndSet(true);
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
@@ -60,12 +63,11 @@ public class ServerTask implements Task {
 					} catch (JMSException ex) {
 						log.error("Customer does not like the dish", ex);
 					}
-				} else {
-					// wait
 				}
 			}
 		} catch (InterruptedException ex) {
 			log.error("Unexpected Interruption", ex);
+			isWorking.getAndSet(false);
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -77,6 +79,11 @@ public class ServerTask implements Task {
 	@Override
 	public void cancel() {
 		cancel = true;
+	}
+
+	@Override
+	public boolean isWorking() {
+		return isWorking.get();
 	}
 
 	@Override
