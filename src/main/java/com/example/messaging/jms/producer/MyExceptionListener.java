@@ -3,7 +3,9 @@ package com.example.messaging.jms.producer;
 import jakarta.jms.ExceptionListener;
 import jakarta.jms.JMSException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
+@Component
 @Slf4j
 public class MyExceptionListener implements ExceptionListener {
 

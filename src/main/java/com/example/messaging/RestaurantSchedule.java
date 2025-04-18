@@ -10,6 +10,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 1x: Main Thread
+ * 1x: MyCompletionListener
+ * 2x: JmsConsumer
+ * 4x: Producer
+ * 4x: Consumer
+ */
+
 @Component
 @RequiredArgsConstructor
 @Slf4j

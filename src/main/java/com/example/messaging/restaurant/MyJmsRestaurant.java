@@ -4,21 +4,23 @@ import com.example.messaging.customer.Customer;
 import com.example.messaging.customer.MyCustomer;
 import com.example.messaging.jms.JmsConnectionFactory;
 import com.example.messaging.jms.producer.JmsProducer;
-import com.example.messaging.jms.producer.MyCompletionListener;
-import com.example.messaging.jms.producer.MyExceptionListener;
 import com.example.messaging.jms.producer.Producer;
 import com.example.messaging.task.ChefTask;
 import com.example.messaging.task.ServerTask;
 import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.RestaurantProperties;
+import jakarta.jms.CompletionListener;
 import jakarta.jms.DeliveryMode;
+import jakarta.jms.ExceptionListener;
 import jakarta.jms.Session;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 
 	private final ThreadPoolTaskScheduler workers;
@@ -29,17 +31,9 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 
 	private final JmsConnectionFactory connectionFactory;
 
-	public MyJmsRestaurant(
-			ThreadPoolTaskScheduler workers,
-			RestaurantProperties restaurantProperties,
-			JmsProperties jmsProperties,
-			JmsConnectionFactory connectionFactory) {
-		super();
-		this.workers = workers;
-		this.restaurantProperties = restaurantProperties;
-		this.jmsProperties = jmsProperties;
-		this.connectionFactory = connectionFactory;
-	}
+	private final ExceptionListener myExceptionListener;
+
+	private final CompletionListener myCompletionListener;
 
 	public void open() {
 		log.info("Opening restaurant...");
@@ -68,8 +62,8 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 	protected void createProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
 			Producer jmsProducer = new JmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
-			jmsProducer.getContext().setExceptionListener(new MyExceptionListener());
-			jmsProducer.getProducer().setAsync(new MyCompletionListener());
+			jmsProducer.getContext().setExceptionListener(myExceptionListener);
+			jmsProducer.getProducer().setAsync(myCompletionListener);
 			jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
 			ServerTask serverTask = new ServerTask(startGate, dishesQueue, jmsProducer, restaurantProperties.getTakeGiveUp());
 			serverTasks.add(serverTask);

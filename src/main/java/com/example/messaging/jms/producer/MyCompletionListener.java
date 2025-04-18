@@ -3,13 +3,15 @@ package com.example.messaging.jms.producer;
 import jakarta.jms.CompletionListener;
 import jakarta.jms.Message;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
+@Component
 @Slf4j
 public class MyCompletionListener implements CompletionListener {
 
 	@Override
 	public void onCompletion(Message message) {
-		// log.info("Acknowledged");
+//		 log.info("Acknowledged");
 	}
 
 	@Override
