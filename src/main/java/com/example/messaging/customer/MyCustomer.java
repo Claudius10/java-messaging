@@ -46,13 +46,13 @@ public class MyCustomer implements Customer {
 
 	private void generateDishes() {
 		if (new Random().nextBoolean()) {
-			log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
+//			log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
 			for (long i = 0; i < amountOfDishesToGenerate; i++) {
 				Dish dish = Dish.builder().withId(i).withCooked(false).withName("Delicious dish").build();
 				dishes.add(dish);
 			}
 		} else {
-			log.info("Customer is satisfied for the time being.");
+//			log.info("Customer is satisfied for the time being.");
 		}
 	}
 }

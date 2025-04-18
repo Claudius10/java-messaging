@@ -1,7 +1,7 @@
 package com.example.messaging.task;
 
-import com.example.messaging.model.Dish;
 import com.example.messaging.jms.producer.Producer;
+import com.example.messaging.model.Dish;
 import jakarta.jms.JMSException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -18,9 +18,9 @@ public class ServerTask implements Task {
 
 	private final CountDownLatch startGate;
 
-	private final AtomicInteger in = new AtomicInteger(0);
+	private final AtomicLong in = new AtomicLong(0);
 
-	private final AtomicInteger out = new AtomicInteger(0);
+	private final AtomicLong out = new AtomicLong(0);
 
 	private final AtomicBoolean isWorking = new AtomicBoolean(false);
 
@@ -87,12 +87,12 @@ public class ServerTask implements Task {
 	}
 
 	@Override
-	public int getInCount() {
+	public long getInCount() {
 		return in.get();
 	}
 
 	@Override
-	public int getOutCount() {
+	public long getOutCount() {
 		return out.get();
 	}
 }

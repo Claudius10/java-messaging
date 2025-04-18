@@ -7,6 +7,7 @@ import com.example.messaging.jms.producer.JmsProducer;
 import com.example.messaging.jms.producer.Producer;
 import com.example.messaging.task.ChefTask;
 import com.example.messaging.task.ServerTask;
+import com.example.messaging.util.DishesStat;
 import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.RestaurantProperties;
 import jakarta.jms.CompletionListener;
@@ -17,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -44,7 +47,7 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 
 	public void close() {
 		super.stop();
-		super.doInventory();
+		super.printStats();
 		log.info("Restaurant closed");
 	}
 
@@ -69,5 +72,10 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 			serverTasks.add(serverTask);
 			runningTasks.add(workers.submit(serverTask));
 		}
+	}
+
+	@Override
+	public Map<DishesStat, Long> getStats() {
+		return super.getStats();
 	}
 }

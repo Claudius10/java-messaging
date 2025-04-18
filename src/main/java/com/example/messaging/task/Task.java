@@ -6,7 +6,7 @@ public interface Task extends Runnable {
 
 	boolean isWorking();
 
-	int getInCount();
+	long getInCount();
 
-	int getOutCount();
+	long getOutCount();
 }

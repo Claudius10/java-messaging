@@ -9,16 +9,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class ChefTask implements Task {
 
 	private final CountDownLatch startGate;
 
-	private final AtomicInteger in = new AtomicInteger(0);
+	private final AtomicLong in = new AtomicLong(0);
 
-	private final AtomicInteger out = new AtomicInteger(0);
+	private final AtomicLong out = new AtomicLong(0);
 
 	private final AtomicBoolean isWorking = new AtomicBoolean(false);
 
@@ -88,7 +88,7 @@ public class ChefTask implements Task {
 		long now = System.currentTimeMillis();
 		long elapsed = now - timeOfLastDish;
 		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {
-			log.info("Greeting customer...");
+//			log.info("Greeting customer...");
 			try {
 				customer.greet();
 				isWorking.compareAndSet(false, true);
@@ -110,12 +110,12 @@ public class ChefTask implements Task {
 	}
 
 	@Override
-	public int getInCount() {
+	public long getInCount() {
 		return in.get();
 	}
 
 	@Override
-	public int getOutCount() {
+	public long getOutCount() {
 		return out.get();
 	}
 }
