@@ -34,9 +34,7 @@ public class Customer {
 		return dish;
 	}
 
-	// a.k.a sending a Heartbeat
 	public void greet() {
-		log.info("Getting customer order...");
 		if (new Random().nextBoolean()) {
 			generateDishes();
 		} else {

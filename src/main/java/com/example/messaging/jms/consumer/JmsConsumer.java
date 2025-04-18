@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class JmsConsumer implements Consumer {
 
 	@Override
-	@JmsListener(destination = "queue-table-A", concurrency = "2")
+	@JmsListener(destination = "${jms.destination}", concurrency = "2")
 	public void receive(String content) {
 
 	}

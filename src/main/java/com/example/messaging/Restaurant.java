@@ -1,11 +1,11 @@
 package com.example.messaging;
 
 import com.example.messaging.jms.JmsConnectionFactory;
-import com.example.messaging.model.Dish;
 import com.example.messaging.jms.producer.JmsProducer;
 import com.example.messaging.jms.producer.MyCompletionListener;
 import com.example.messaging.jms.producer.MyExceptionListener;
 import com.example.messaging.jms.producer.Producer;
+import com.example.messaging.model.Dish;
 import com.example.messaging.task.async.ChefTask;
 import com.example.messaging.task.async.ServerTask;
 import com.example.messaging.task.async.Task;

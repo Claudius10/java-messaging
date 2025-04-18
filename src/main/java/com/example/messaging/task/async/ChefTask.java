@@ -53,6 +53,7 @@ public class ChefTask implements Task {
 
 				if (cancel) {
 					log.info("Chef shift ended");
+					isWorking.compareAndSet(true, false);
 					break;
 				}
 
@@ -87,6 +88,7 @@ public class ChefTask implements Task {
 		long now = System.currentTimeMillis();
 		long elapsed = now - timeOfLastDish;
 		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {
+			log.info("Greeting customer...");
 			try {
 				customer.greet();
 				isWorking.compareAndSet(false, true);
