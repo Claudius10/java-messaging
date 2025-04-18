@@ -30,7 +30,7 @@ public class JmsConfig {
 		DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
 		factory.setSessionTransacted(true);
-		factory.setConcurrency("2");
+		factory.setConcurrency("3");
 		return factory;
 	}
 

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class JmsConsumer implements Consumer {
 
 	@Override
-	@JmsListener(destination = "${jms.destination}", concurrency = "2")
+	@JmsListener(destination = "${jms.destination}", concurrency = "3")
 	public void receive(String content) {
 //		log.info("Received message: {}", content);
 	}

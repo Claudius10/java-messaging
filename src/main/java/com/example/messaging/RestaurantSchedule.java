@@ -13,9 +13,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * 1x: Main Thread
  * 1x: MyCompletionListener
- * 2x: JmsConsumer
- * 4x: Producer
- * 4x: Consumer
+ * 3x: JmsConsumer
+ * 3x: Producer
+ * 3x: Consumer
+ * 1x: roaming
  */
 
 @Component
