@@ -1,8 +1,8 @@
-package com.example.messaging.task.async;
+package com.example.messaging.task;
 
+import com.example.messaging.customer.Customer;
 import com.example.messaging.exception.CustomerGreetException;
 import com.example.messaging.model.Dish;
-import com.example.messaging.util.Customer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
@@ -32,10 +32,10 @@ public class ChefTask implements Task {
 
 	private long timeOfLastDish = 0;
 
-	public ChefTask(CountDownLatch startGate, BlockingQueue<Dish> completedDishes, int amountOfDishesToGenerate, int greetTimeOut) {
+	public ChefTask(CountDownLatch startGate, BlockingQueue<Dish> completedDishes, Customer customer, int greetTimeOut) {
 		this.startGate = startGate;
 		this.completedDishes = completedDishes;
-		this.customer = new Customer(amountOfDishesToGenerate);
+		this.customer = customer;
 		this.greetTimeOut = greetTimeOut;
 	}
 

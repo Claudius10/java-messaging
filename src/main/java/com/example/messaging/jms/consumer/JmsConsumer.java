@@ -11,6 +11,6 @@ public class JmsConsumer implements Consumer {
 	@Override
 	@JmsListener(destination = "${jms.destination}", concurrency = "2")
 	public void receive(String content) {
-
+//		log.info("Received message: {}", content);
 	}
 }

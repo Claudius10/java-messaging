@@ -1,4 +1,4 @@
-package com.example.messaging.task.async;
+package com.example.messaging.task;
 
 import com.example.messaging.model.Dish;
 import com.example.messaging.jms.producer.Producer;

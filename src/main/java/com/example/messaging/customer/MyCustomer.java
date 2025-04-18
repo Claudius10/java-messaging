@@ -1,4 +1,4 @@
-package com.example.messaging.util;
+package com.example.messaging.customer;
 
 import com.example.messaging.exception.CustomerGreetException;
 import com.example.messaging.model.Dish;
@@ -10,17 +10,18 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 
 @Slf4j
-public class Customer {
+public class MyCustomer implements Customer {
 
 	private final List<Dish> dishes;
 
 	private final int amountOfDishesToGenerate;
 
-	public Customer(int amountOfDishesToGenerate) {
+	public MyCustomer(int amountOfDishesToGenerate) {
 		dishes = new ArrayList<>();
 		this.amountOfDishesToGenerate = amountOfDishesToGenerate;
 	}
 
+	@Override
 	public Dish getDish() {
 		Dish dish = null;
 
@@ -34,6 +35,7 @@ public class Customer {
 		return dish;
 	}
 
+	@Override
 	public void greet() {
 		if (new Random().nextBoolean()) {
 			generateDishes();
@@ -42,7 +44,7 @@ public class Customer {
 		}
 	}
 
-	public void generateDishes() {
+	private void generateDishes() {
 		if (new Random().nextBoolean()) {
 			log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
 			for (long i = 0; i < amountOfDishesToGenerate; i++) {

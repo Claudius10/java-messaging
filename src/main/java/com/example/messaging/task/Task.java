@@ -1,4 +1,4 @@
-package com.example.messaging.task.async;
+package com.example.messaging.task;
 
 public interface Task extends Runnable {
 
