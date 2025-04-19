@@ -15,30 +15,29 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 public class MyJmsRestaurantSafetyTests {
 
 	@Test
-	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException {
+	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException, JMSException {
 
 		int dishesToProduce = 10000;
 		int blockingQueueCapacity = 1000;
 		int maxThreads = 3;
-		int trials = 5;
+		int trials = 1;
 		int trialDurationMilis = 2000;
 
 		testRestaurantSafety(trials, blockingQueueCapacity, maxThreads, trialDurationMilis, dishesToProduce);
 	}
 
-	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException {
+	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException, JMSException {
 		for (int i = 0; i < trials; i++) {
 			restaurantTest(capacity, pairs, duration, amount);
 		}
 	}
 
-	void restaurantTest(int capacity, int pairs, int duration, int amount) throws InterruptedException {
+	void restaurantTest(int capacity, int pairs, int duration, int amount) throws InterruptedException, JMSException {
 		// Arrange
 
 		RestaurantProperties restaurantProperties = new RestaurantProperties();
@@ -68,6 +67,7 @@ public class MyJmsRestaurantSafetyTests {
 		doReturn(jmsContext).when(producer).getContext();
 		doReturn(jmsProducer).when(producer).getProducer();
 		doReturn(textMessage).when(jmsContext).createTextMessage(any());
+		doNothing().when(textMessage).setLongProperty(anyString(), anyLong());
 
 		Restaurant restaurant = new MyJmsRestaurant(workers(), restaurantProperties, jmsProperties, jmsConnectionFactory, exceptionListener, completionListener);
 

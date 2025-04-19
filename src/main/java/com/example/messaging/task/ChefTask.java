@@ -16,6 +16,8 @@ public class ChefTask implements Task {
 
 	private final CountDownLatch startGate;
 
+	private final CountDownLatch endGate;
+
 	private final AtomicLong in = new AtomicLong(0);
 
 	private final AtomicLong out = new AtomicLong(0);
@@ -32,8 +34,9 @@ public class ChefTask implements Task {
 
 	private long timeOfLastDish = 0;
 
-	public ChefTask(CountDownLatch startGate, BlockingQueue<Dish> completedDishes, Customer customer, int greetTimeOut) {
+	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, Customer customer, int greetTimeOut) {
 		this.startGate = startGate;
+		this.endGate = endGate;
 		this.completedDishes = completedDishes;
 		this.customer = customer;
 		this.greetTimeOut = greetTimeOut;
@@ -52,8 +55,9 @@ public class ChefTask implements Task {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel) {
-					log.info("Chef shift ended");
 					isWorking.compareAndSet(true, false);
+					endGate.countDown();
+					log.info("Chef shift ended");
 					break;
 				}
 
@@ -85,6 +89,7 @@ public class ChefTask implements Task {
 	}
 
 	private void handleIdle() {
+//		completedDishes.clear();
 		long now = System.currentTimeMillis();
 		long elapsed = now - timeOfLastDish;
 		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {

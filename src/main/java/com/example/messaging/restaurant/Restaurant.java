@@ -8,7 +8,7 @@ public interface Restaurant {
 
 	void open();
 
-	void close();
+	void close() throws InterruptedException;
 
 	Map<DishesStat, Long> getStats();
 }

@@ -18,6 +18,8 @@ public class ServerTask implements Task {
 
 	private final CountDownLatch startGate;
 
+	private final CountDownLatch endGate;
+
 	private final AtomicLong in = new AtomicLong(0);
 
 	private final AtomicLong out = new AtomicLong(0);
@@ -48,6 +50,7 @@ public class ServerTask implements Task {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
+					endGate.countDown();
 					log.info("Server shift ended");
 					break;
 				}

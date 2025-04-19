@@ -45,7 +45,7 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 		super.startWork(maxCustomers);
 	}
 
-	public void close() {
+	public void close() throws InterruptedException {
 		super.stop();
 		super.printStats();
 		log.info("Restaurant closed");
@@ -55,9 +55,9 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 	protected void createConsumers(int amount) {
 		for (int i = 0; i < amount; i++) {
 			Customer customer = new MyCustomer(restaurantProperties.getDishes());
-			ChefTask chefTask = new ChefTask(startGate, dishesQueue, customer, restaurantProperties.getGreetTimeOut());
+			ChefTask chefTask = new ChefTask(startGate, endGate, dishesQueue, customer, restaurantProperties.getGreetTimeOut());
 			chefTasks.add(chefTask);
-			runningTasks.add(workers.submit(chefTask));
+			workers.execute(chefTask);
 		}
 	}
 
@@ -68,9 +68,9 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 			jmsProducer.getContext().setExceptionListener(myExceptionListener);
 			jmsProducer.getProducer().setAsync(myCompletionListener);
 			jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
-			ServerTask serverTask = new ServerTask(startGate, dishesQueue, jmsProducer, restaurantProperties.getTakeGiveUp());
+			ServerTask serverTask = new ServerTask(startGate, endGate, dishesQueue, jmsProducer, restaurantProperties.getTakeGiveUp());
 			serverTasks.add(serverTask);
-			runningTasks.add(workers.submit(serverTask));
+			workers.execute(serverTask);
 		}
 	}
 

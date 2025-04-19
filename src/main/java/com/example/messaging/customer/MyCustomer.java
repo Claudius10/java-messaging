@@ -12,12 +12,12 @@ import java.util.Random;
 @Slf4j
 public class MyCustomer implements Customer {
 
-	private final List<Dish> dishes;
+	private List<Dish> dishes;
 
 	private final int amountOfDishesToGenerate;
 
 	public MyCustomer(int amountOfDishesToGenerate) {
-		dishes = new ArrayList<>();
+		dishes = new ArrayList<>(amountOfDishesToGenerate);
 		this.amountOfDishesToGenerate = amountOfDishesToGenerate;
 	}
 
@@ -26,10 +26,12 @@ public class MyCustomer implements Customer {
 		Dish dish = null;
 
 		try {
-			dish = dishes.getFirst();
-			dishes.removeFirst();
+			if (!dishes.isEmpty()) {
+				dish = dishes.getFirst();
+				dishes.removeFirst();
+			}
 		} catch (NoSuchElementException ex) {
-			// ignore
+			dishes = null;
 		}
 
 		return dish;
@@ -47,6 +49,7 @@ public class MyCustomer implements Customer {
 	private void generateDishes() {
 		if (new Random().nextBoolean()) {
 //			log.info("Customer ordered {} dishes!", amountOfDishesToGenerate);
+			dishes = new ArrayList<>();
 			for (long i = 0; i < amountOfDishesToGenerate; i++) {
 				Dish dish = Dish.builder().withId(i).withCooked(false).withName("Delicious dish").build();
 				dishes.add(dish);

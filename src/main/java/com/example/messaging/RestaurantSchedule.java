@@ -35,7 +35,11 @@ public class RestaurantSchedule {
 
 	@Scheduled(initialDelay = 30, timeUnit = TimeUnit.SECONDS)
 	public void closeJmsRestaurant() {
-		myJmsRestaurant.close();
-		restaurantControls.close();
+		try {
+			myJmsRestaurant.close();
+			restaurantControls.close();
+		} catch (InterruptedException e) {
+			log.error("Interrupted with closing JMS Restaurant: {}", e.getMessage());
+		}
 	}
 }

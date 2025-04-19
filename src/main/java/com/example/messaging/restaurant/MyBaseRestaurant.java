@@ -19,18 +19,18 @@ public abstract class MyBaseRestaurant {
 
 	protected List<Task> serverTasks;
 
-	protected List<Future<?>> runningTasks; // as an interruption mechanism
-
 	protected BlockingQueue<Dish> dishesQueue;
 
 	protected final CountDownLatch startGate = new CountDownLatch(1);
+
+	protected CountDownLatch endGate;
 
 	protected void preparations(int dishesCapacity, int maxCustomers) {
 		log.info("Preparing restaurant...");
 		dishesQueue = new LinkedBlockingDeque<>(dishesCapacity);
 		chefTasks = new ArrayList<>(maxCustomers);
 		serverTasks = new ArrayList<>(maxCustomers);
-		runningTasks = new ArrayList<>(maxCustomers);
+		endGate = new CountDownLatch(maxCustomers * 2);
 	}
 
 	protected void startWork(int forAmountOfCustomers) {
@@ -39,7 +39,7 @@ public abstract class MyBaseRestaurant {
 		startGate.countDown();
 	}
 
-	protected void stop() {
+	protected void stop() throws InterruptedException {
 		log.info("Closing restaurant...");
 
 		List<Task> allTasks = Stream.concat(chefTasks.stream(), serverTasks.stream()).toList();
@@ -48,16 +48,7 @@ public abstract class MyBaseRestaurant {
 			task.cancel();
 		}
 
-		// block thread until all tasks complete
-		for (Future<?> kitchenTask : runningTasks) {
-			try {
-				kitchenTask.get();
-			} catch (ExecutionException ex) {
-				log.error("Error while executing task", ex);
-			} catch (InterruptedException ex) {
-				log.error("Task was interrupted", ex);
-			}
-		}
+		endGate.await();
 	}
 
 	protected abstract void createConsumers(int amount);
