@@ -85,11 +85,11 @@ public class ChefTask implements Task {
 	}
 
 	private void cook(Dish dish) throws InterruptedException {
+		dish.setCooked(true);
 		completedDishes.put(dish); // wait: can't have customers go hungry. also, if cancel becomes true, put last dish and end
 	}
 
 	private void handleIdle() {
-//		completedDishes.clear();
 		long now = System.currentTimeMillis();
 		long elapsed = now - timeOfLastDish;
 		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {

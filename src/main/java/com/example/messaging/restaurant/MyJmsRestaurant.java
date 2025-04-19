@@ -4,6 +4,7 @@ import com.example.messaging.customer.Customer;
 import com.example.messaging.customer.MyCustomer;
 import com.example.messaging.jms.JmsConnectionFactory;
 import com.example.messaging.jms.producer.JmsProducer;
+import com.example.messaging.jms.producer.NoopProducer;
 import com.example.messaging.jms.producer.Producer;
 import com.example.messaging.task.ChefTask;
 import com.example.messaging.task.ServerTask;
@@ -64,14 +65,22 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 	@Override
 	protected void createProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-			Producer jmsProducer = new JmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
-			jmsProducer.getContext().setExceptionListener(myExceptionListener);
-			jmsProducer.getProducer().setAsync(myCompletionListener);
-			jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
-			ServerTask serverTask = new ServerTask(startGate, endGate, dishesQueue, jmsProducer, restaurantProperties.getTakeGiveUp());
+			ServerTask serverTask = new ServerTask(startGate, endGate, dishesQueue, buildProducer(), restaurantProperties.getTakeGiveUp());
 			serverTasks.add(serverTask);
 			workers.execute(serverTask);
 		}
+	}
+
+	private Producer buildProducer() {
+		if (jmsProperties.getProducer().equalsIgnoreCase("NoopProducer")) {
+			return new NoopProducer();
+		}
+
+		Producer jmsProducer = new JmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
+		jmsProducer.getContext().setExceptionListener(myExceptionListener);
+		jmsProducer.getProducer().setAsync(myCompletionListener);
+		jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
+		return jmsProducer;
 	}
 
 	@Override

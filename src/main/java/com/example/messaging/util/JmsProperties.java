@@ -22,4 +22,6 @@ public class JmsProperties {
 	private String destination;
 
 	private String factory;
+
+	private String producer;
 }

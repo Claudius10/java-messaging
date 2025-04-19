@@ -1,21 +1,20 @@
 package com.example.messaging.tasks;
 
 import com.example.messaging.jms.JmsConnectionFactory;
-import com.example.messaging.jms.producer.Producer;
 import com.example.messaging.restaurant.MyJmsRestaurant;
-import com.example.messaging.restaurant.Restaurant;
 import com.example.messaging.util.DishesStat;
 import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.RestaurantProperties;
-import jakarta.jms.*;
+import jakarta.jms.CompletionListener;
+import jakarta.jms.ExceptionListener;
+import jakarta.jms.JMSException;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class MyJmsRestaurantSafetyTests {
 
@@ -25,7 +24,7 @@ public class MyJmsRestaurantSafetyTests {
 		int dishesToProduce = 10000;
 		int blockingQueueCapacity = 1000;
 		int maxThreads = 3;
-		int trials = 1;
+		int trials = 100;
 		int trialDurationMilis = 2000;
 
 		testRestaurantSafety(trials, blockingQueueCapacity, maxThreads, trialDurationMilis, dishesToProduce);
@@ -51,25 +50,13 @@ public class MyJmsRestaurantSafetyTests {
 		jmsProperties.setUser("user");
 		jmsProperties.setPassword("password");
 		jmsProperties.setDestination("queue");
+		jmsProperties.setProducer("NoopProducer");
 
 		JmsConnectionFactory jmsConnectionFactory = mock(JmsConnectionFactory.class);
 		ExceptionListener exceptionListener = mock(ExceptionListener.class);
 		CompletionListener completionListener = mock(CompletionListener.class);
-		Producer producer = mock(Producer.class);
-		JMSProducer jmsProducer = mock(JMSProducer.class);
-		JMSContext jmsContext = mock(JMSContext.class);
-		Queue queue = mock(Queue.class);
-		TextMessage textMessage = mock(TextMessage.class);
 
-		doReturn(jmsContext).when(jmsConnectionFactory).createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
-		doReturn(jmsProducer).when(jmsContext).createProducer();
-		doReturn(queue).when(jmsContext).createQueue(jmsProperties.getDestination());
-		doReturn(jmsContext).when(producer).getContext();
-		doReturn(jmsProducer).when(producer).getProducer();
-		doReturn(textMessage).when(jmsContext).createTextMessage(any());
-		doNothing().when(textMessage).setLongProperty(anyString(), anyLong());
-
-		Restaurant restaurant = new MyJmsRestaurant(workers(), restaurantProperties, jmsProperties, jmsConnectionFactory, exceptionListener, completionListener);
+		MyJmsRestaurant restaurant = new MyJmsRestaurant(workers(), restaurantProperties, jmsProperties, jmsConnectionFactory, exceptionListener, completionListener);
 
 		// Act
 
