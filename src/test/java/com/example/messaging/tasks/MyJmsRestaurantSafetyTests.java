@@ -2,6 +2,7 @@ package com.example.messaging.tasks;
 
 import com.example.messaging.jms.JmsConnectionFactory;
 import com.example.messaging.restaurant.MyJmsRestaurant;
+import com.example.messaging.restaurant.Restaurant;
 import com.example.messaging.util.DishesStat;
 import com.example.messaging.util.JmsProperties;
 import com.example.messaging.util.RestaurantProperties;
@@ -56,7 +57,7 @@ public class MyJmsRestaurantSafetyTests {
 		ExceptionListener exceptionListener = mock(ExceptionListener.class);
 		CompletionListener completionListener = mock(CompletionListener.class);
 
-		MyJmsRestaurant restaurant = new MyJmsRestaurant(workers(), restaurantProperties, jmsProperties, jmsConnectionFactory, exceptionListener, completionListener);
+		Restaurant restaurant = new MyJmsRestaurant(workers(), restaurantProperties, jmsProperties, jmsConnectionFactory, exceptionListener, completionListener);
 
 		// Act
 
