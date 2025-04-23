@@ -1,0 +1,18 @@
+package com.example.messaging.jms.listener;
+
+import jakarta.jms.ExceptionListener;
+import jakarta.jms.JMSException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+
+@Profile("Jms")
+@Component
+@Slf4j
+public class MyExceptionListener implements ExceptionListener {
+
+	@Override
+	public void onException(JMSException exception) {
+		log.error("JMS Exception occurred: {}", exception.getMessage());
+	}
+}

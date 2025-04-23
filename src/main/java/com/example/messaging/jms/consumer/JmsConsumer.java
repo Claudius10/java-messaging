@@ -1,16 +1,17 @@
 package com.example.messaging.jms.consumer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
+@Profile("Jms")
 @Component
 @Slf4j
-public class JmsConsumer implements Consumer {
+public class JmsConsumer {
 
-	@Override
 	@JmsListener(destination = "${jms.destination}", concurrency = "3")
 	public void receive(String content) {
-//		log.info("Received message: {}", content);
+		if (log.isTraceEnabled()) log.trace("Received message: {}", content);
 	}
 }

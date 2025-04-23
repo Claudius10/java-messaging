@@ -1,0 +1,132 @@
+package com.example.messaging.common.task.impl;
+
+import com.example.messaging.common.customer.Customer;
+import com.example.messaging.common.exception.CustomerGreetException;
+import com.example.messaging.common.model.Dish;
+import com.example.messaging.common.task.MessagingTask;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
+public class ChefTask implements MessagingTask {
+
+	private final CountDownLatch startGate;
+
+	private final CountDownLatch endGate;
+
+	private final BlockingQueue<Dish> completedDishes;
+
+	private final Customer customer;
+
+	private final int greetTimeOut;
+
+	private long in = 0;
+
+	private long out = 0;
+
+	private boolean isWorking = false;
+
+	private boolean cancel = false;
+
+	private long timeOfLastDish = 0;
+
+	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, Customer customer, int greetTimeOut) {
+		this.startGate = startGate;
+		this.endGate = endGate;
+		this.completedDishes = completedDishes;
+		this.customer = customer;
+		this.greetTimeOut = greetTimeOut;
+	}
+
+	@Override
+	public void run() {
+		startWork();
+	}
+
+	private void startWork() {
+		try {
+			if (log.isTraceEnabled()) log.trace("Waiting on coworkers...");
+			startGate.await();
+			if (log.isTraceEnabled()) log.trace("All coworkers ready, starting work!");
+			while (!Thread.currentThread().isInterrupted()) {
+
+				if (cancel) {
+					isWorking = false;
+					endGate.countDown();
+					if (log.isTraceEnabled()) log.trace("Chef shift ended");
+					break;
+				}
+
+				Dish dish = customer.getDish();
+
+				if (dish != null) {
+					try {
+						timeOfLastDish = System.currentTimeMillis();
+						in++;
+						cook(dish);
+						out++;
+					} catch (IllegalArgumentException | ClassCastException ex) {
+						log.warn("Can't add dish {} to queue: {}", dish.getId(), ex.getMessage());
+					}
+				} else {
+					handleIdle();
+				}
+			}
+
+		} catch (InterruptedException ex) {
+			log.warn("Chef interrupted: {}", ex.getMessage());
+			isWorking = false;
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void cook(Dish dish) throws InterruptedException {
+		dish.setCooked(true);
+		completedDishes.put(dish); // wait: can't have customers go hungry. also, if cancel becomes true, put last dish and end
+		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getId());
+	}
+
+	private void handleIdle() {
+		long now = System.currentTimeMillis();
+		long elapsed = now - timeOfLastDish;
+
+		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {
+			if (log.isTraceEnabled()) log.trace("Greeting customer...");
+			try {
+				customer.greet();
+				isWorking = true;
+			} catch (CustomerGreetException ex) {
+				isWorking = false;
+				if (log.isTraceEnabled()) log.trace("Customer response: '{}'", ex.getMessage());
+			}
+		}
+	}
+
+	@Override
+	public void cancel() {
+		cancel = true;
+	}
+
+	@Override
+	public boolean isWorking() {
+		return isWorking;
+	}
+
+	@Override
+	public long getInCount() {
+		return in;
+	}
+
+	@Override
+	public long getOutCount() {
+		return out;
+	}
+
+	@Override
+	public long timeInMilisOfLastMessage() {
+		return timeOfLastDish;
+	}
+}

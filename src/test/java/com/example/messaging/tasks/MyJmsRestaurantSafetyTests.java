@@ -1,14 +1,14 @@
 package com.example.messaging.tasks;
 
-import com.example.messaging.jms.JmsConnectionFactory;
-import com.example.messaging.restaurant.MyJmsRestaurant;
-import com.example.messaging.restaurant.Restaurant;
-import com.example.messaging.util.DishesStat;
-import com.example.messaging.util.JmsProperties;
-import com.example.messaging.util.RestaurantProperties;
+import com.example.messaging.jms.config.JmsConnectionFactory;
+import com.example.messaging.jms.restaurant.MyJmsRestaurant;
+import com.example.messaging.common.restaurant.Restaurant;
+import com.example.messaging.common.util.DishesStat;
+import com.example.messaging.jms.config.JmsProperties;
+import com.example.messaging.common.config.RestaurantProperties;
 import jakarta.jms.CompletionListener;
 import jakarta.jms.ExceptionListener;
-import jakarta.jms.JMSException;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
@@ -17,34 +17,36 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+@Slf4j
 public class MyJmsRestaurantSafetyTests {
 
 	@Test
-	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException, JMSException {
+	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException {
 
-		int dishesToProduce = 10000;
-		int blockingQueueCapacity = 1000;
 		int maxThreads = 3;
-		int trials = 100;
-		int trialDurationMilis = 2000;
+		int blockingQueueCapacity = 1000;
+
+		int trials = 5000;
+		int trialDurationMilis = 100;
+		int dishesToProduce = 10000;
 
 		testRestaurantSafety(trials, blockingQueueCapacity, maxThreads, trialDurationMilis, dishesToProduce);
 	}
 
-	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException, JMSException {
+	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException {
 		for (int i = 0; i < trials; i++) {
 			restaurantTest(capacity, pairs, duration, amount);
+			log.info("Trial {} OK", i);
 		}
 	}
 
-	void restaurantTest(int capacity, int pairs, int duration, int amount) throws InterruptedException, JMSException {
+	void restaurantTest(int capacity, int pairs, int duration, int amount) throws InterruptedException {
 		// Arrange
 
 		RestaurantProperties restaurantProperties = new RestaurantProperties();
-		restaurantProperties.setDishes(amount);
-		restaurantProperties.setDishesCapacity(capacity);
+		restaurantProperties.setDishesToProduce(amount);
+		restaurantProperties.setDishesQueueCapacity(capacity);
 		restaurantProperties.setTakeGiveUp(2);
-		restaurantProperties.setMaxCapacity(pairs);
 		restaurantProperties.setGreetTimeOut(99999);
 
 		JmsProperties jmsProperties = new JmsProperties();
@@ -52,6 +54,7 @@ public class MyJmsRestaurantSafetyTests {
 		jmsProperties.setPassword("password");
 		jmsProperties.setDestination("queue");
 		jmsProperties.setProducer("NoopProducer");
+		jmsProperties.setMaxConnections(pairs);
 
 		JmsConnectionFactory jmsConnectionFactory = mock(JmsConnectionFactory.class);
 		ExceptionListener exceptionListener = mock(ExceptionListener.class);

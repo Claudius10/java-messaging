@@ -1,0 +1,101 @@
+package com.example.messaging.kafka.config;
+
+import lombok.RequiredArgsConstructor;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.support.ProducerListener;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Profile("Kafka")
+@Configuration
+@RequiredArgsConstructor
+@EnableKafka
+public class KafkaConfig {
+
+	private final KafkaProperties kafkaProperties;
+
+	// Consumer
+
+	@Bean
+	KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<Long, String>> kafkaListenerContainerFactory(
+			ConsumerFactory<Long, String> consumerFactory,
+			ThreadPoolTaskScheduler workers) {
+		ConcurrentKafkaListenerContainerFactory<Long, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+		factory.setConsumerFactory(consumerFactory);
+		factory.setConcurrency(kafkaProperties.getMaxConnections());
+		factory.getContainerProperties().setListenerTaskExecutor(workers);
+		factory.getContainerProperties().setPollTimeout(kafkaProperties.getPollTimeOut());
+		factory.setAutoStartup(false);
+		return factory;
+	}
+
+	@Bean
+	public ConsumerFactory<Long, String> consumerFactory() {
+		return new DefaultKafkaConsumerFactory<>(consumerConfigs());
+	}
+
+	private Map<String, Object> consumerConfigs() {
+		Map<String, Object> props = new HashMap<>();
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBrokerUrl());
+		props.put(ConsumerConfig.CLIENT_ID_CONFIG, kafkaProperties.getConsumerId());
+		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
+		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		return props;
+	}
+
+	// Producer
+
+	@Bean
+	KafkaTemplate<Long, String> kafkaTemplate(ProducerFactory<Long, String> producerFactory, ProducerListener<Long, String> producerListener) {
+		KafkaTemplate<Long, String> template = new KafkaTemplate<>(producerFactory);
+		template.setProducerListener(producerListener);
+		return template;
+	}
+
+	@Bean
+	public ProducerFactory<Long, String> producerFactory() {
+		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs());
+		producerFactory.setProducerPerThread(true);
+		return producerFactory;
+	}
+
+	// https://kafka.apache.org/documentation/#producerconfigs
+	private Map<String, Object> producerConfigs() {
+		Map<String, Object> props = new HashMap<>();
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBrokerUrl());
+		props.put(ProducerConfig.CLIENT_ID_CONFIG, kafkaProperties.getProducerClientId());
+		props.put(ProducerConfig.RETRIES_CONFIG, kafkaProperties.getProducerRetries());
+		props.put(ProducerConfig.ACKS_CONFIG, kafkaProperties.getProducerAckMode());
+		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+		return props;
+	}
+
+	// Topics
+
+	@Bean
+	public NewTopic dishesTopic() {
+		return TopicBuilder.name(kafkaProperties.getTopic())
+				.partitions(3)
+				.replicas(1)
+				.compact()
+				.build();
+	}
+}
