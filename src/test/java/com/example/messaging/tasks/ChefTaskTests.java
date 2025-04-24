@@ -1,9 +1,9 @@
 package com.example.messaging.tasks;
 
-import com.example.messaging.common.customer.Customer;
-import com.example.messaging.common.customer.impl.MyCustomer;
+import com.example.messaging.common.customer.RestaurantCustomer;
+import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.model.Dish;
-import com.example.messaging.common.task.impl.ChefTask;
+import com.example.messaging.common.task.restaurant.ChefTask;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.BlockingQueue;
@@ -26,7 +26,7 @@ public class ChefTaskTests {
 		int greetTimeOutSeconds = 2;
 		int customerId = 1;
 
-		Customer customer = new MyCustomer(dishesToProduce, customerId);
+		RestaurantCustomer customer = new MyRestaurantCustomer(dishesToProduce, customerId);
 		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutSeconds);
 		Thread chefThread = new Thread(chefTask);
 
@@ -55,7 +55,7 @@ public class ChefTaskTests {
 		int greetTimeOutSeconds = 60;
 		int customerId = 1;
 
-		Customer customer = new MyCustomer(dishesToProduce, customerId);
+		RestaurantCustomer customer = new MyRestaurantCustomer(dishesToProduce, customerId);
 		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutSeconds);
 		Thread chefThread = new Thread(chefTask);
 

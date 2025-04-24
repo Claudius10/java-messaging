@@ -1,21 +1,26 @@
 package com.example.messaging.jms.restaurant;
 
-import com.example.messaging.common.customer.Customer;
-import com.example.messaging.common.customer.impl.MyCustomer;
+import com.example.messaging.common.customer.RestaurantCustomer;
+import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
+import com.example.messaging.common.manager.BaseMessagingManager;
+import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.model.Dish;
+import com.example.messaging.common.producer.Producer;
+import com.example.messaging.common.producer.backup.BackupProducer;
+import com.example.messaging.common.producer.impl.NoopProducer;
+import com.example.messaging.common.task.MessagingTask;
+import com.example.messaging.common.task.restaurant.ChefTask;
+import com.example.messaging.common.task.restaurant.ServerTask;
+import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsConnectionFactory;
+import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.producer.JmsProducer;
 import com.example.messaging.jms.producer.impl.MyJmsProducer;
-import com.example.messaging.common.producer.impl.NoopProducer;
-import com.example.messaging.common.producer.Producer;
-import com.example.messaging.common.task.impl.ChefTask;
-import com.example.messaging.common.task.MessagingTask;
-import com.example.messaging.common.task.impl.ServerTask;
-import com.example.messaging.common.restaurant.MyBaseRestaurant;
-import com.example.messaging.common.restaurant.Restaurant;
-import com.example.messaging.common.util.DishesStat;
-import com.example.messaging.jms.config.JmsProperties;
-import com.example.messaging.common.config.RestaurantProperties;
-import jakarta.jms.*;
+import jakarta.jms.CompletionListener;
+import jakarta.jms.DeliveryMode;
+import jakarta.jms.ExceptionListener;
+import jakarta.jms.Session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -23,12 +28,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Profile("Jms")
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
+public class MyJmsRestaurant extends BaseMessagingManager implements MessagingManager {
 
 	private final ThreadPoolTaskScheduler workers;
 
@@ -42,10 +49,15 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 
 	private final CompletionListener myCompletionListener;
 
+	private final BackupProducer myBackupProducer;
+
+	private BlockingQueue<Dish> dishesQueue;
+
 	public void open() {
+		dishesQueue = new LinkedBlockingQueue<>(restaurantProperties.getDishesQueueCapacity());
 		int maxCustomers = jmsProperties.getMaxConnections();
-		super.preparations(restaurantProperties.getDishesQueueCapacity(), maxCustomers);
-		super.startWork(maxCustomers);
+		super.setup(maxCustomers);
+		super.start(maxCustomers);
 	}
 
 	public void close() throws InterruptedException {
@@ -55,17 +67,17 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 
 	protected void startProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-			MessagingTask serverTask = new ServerTask(startGate, endGate, dishesQueue, buildProducer(), restaurantProperties.getTakeGiveUp());
-			serverTasks.add(serverTask);
+			MessagingTask serverTask = new ServerTask(startGate, endGate, dishesQueue, buildProducer(), myBackupProducer, restaurantProperties.getTakeGiveUp());
+			consumerTasks.add(serverTask);
 			workers.execute(serverTask);
 		}
 	}
 
 	protected void startConsumers(int amount) {
 		for (int i = 0; i < amount; i++) {
-			Customer customer = new MyCustomer(restaurantProperties.getDishesToProduce(), i);
+			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
 			MessagingTask chefTask = new ChefTask(startGate, endGate, dishesQueue, customer, restaurantProperties.getGreetTimeOut());
-			chefTasks.add(chefTask);
+			producerTasks.add(chefTask);
 			workers.execute(chefTask);
 		}
 	}
@@ -83,17 +95,17 @@ public class MyJmsRestaurant extends MyBaseRestaurant implements Restaurant {
 	}
 
 	@Override
-	public boolean isCooking() {
+	public boolean isProducing() {
 		return super.isProducing();
 	}
 
 	@Override
-	public boolean isServing() {
+	public boolean isConsuming() {
 		return super.isConsuming();
 	}
 
 	@Override
-	public Map<DishesStat, Long> getStats() {
+	public Map<MessagingStat, Long> getStats() {
 		return super.getStats();
 	}
 }

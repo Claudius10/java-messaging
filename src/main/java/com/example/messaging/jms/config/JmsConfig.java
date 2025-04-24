@@ -31,6 +31,7 @@ public class JmsConfig {
 		DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
 		factory.setConcurrency(String.valueOf(jmsProperties.getMaxConnections()));
+		factory.setAutoStartup(false);
 		return factory;
 	}
 

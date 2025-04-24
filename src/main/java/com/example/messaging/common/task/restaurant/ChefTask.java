@@ -1,6 +1,6 @@
-package com.example.messaging.common.task.impl;
+package com.example.messaging.common.task.restaurant;
 
-import com.example.messaging.common.customer.Customer;
+import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.exception.CustomerGreetException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.task.MessagingTask;
@@ -19,7 +19,7 @@ public class ChefTask implements MessagingTask {
 
 	private final BlockingQueue<Dish> completedDishes;
 
-	private final Customer customer;
+	private final RestaurantCustomer customer;
 
 	private final int greetTimeOut;
 
@@ -33,7 +33,7 @@ public class ChefTask implements MessagingTask {
 
 	private long timeOfLastDish = 0;
 
-	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, Customer customer, int greetTimeOut) {
+	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, RestaurantCustomer customer, int greetTimeOut) {
 		this.startGate = startGate;
 		this.endGate = endGate;
 		this.completedDishes = completedDishes;

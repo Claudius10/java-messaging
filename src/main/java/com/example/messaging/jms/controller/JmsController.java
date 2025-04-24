@@ -1,6 +1,6 @@
 package com.example.messaging.jms.controller;
 
-import com.example.messaging.common.restaurant.Restaurant;
+import com.example.messaging.common.manager.MessagingManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class JmsController {
 
-	private final Restaurant myJmsRestaurant;
+	private final MessagingManager myJmsRestaurant;
 
 	@PostMapping("/open")
 	public ResponseEntity<?> open() {

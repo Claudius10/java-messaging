@@ -1,6 +1,6 @@
 package com.example.messaging.common.util;
 
-public enum DishesStat {
+public enum MessagingStat {
 
 	PRODUCER_IN,
 	PRODUCER_OUT,

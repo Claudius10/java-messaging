@@ -15,23 +15,29 @@ public class KafkaProperties {
 
 	private String brokerUrl;
 
+	private int apiTimeoutMs;
+
+	private String clientId;
+
+	private String producerClientId;
+
+	private int producerTimeOutMs;
+
+	private int producerBlockMs;
+
+	private String producerAckMode;
+
+	private String producer;
+
+	private String consumerId;
+
+	private int consumerTimeoutMs;
+
+	private String consumerGroupId;
+
 	private String topic;
 
 	private int maxConnections;
 
 	private int pollTimeOut;
-
-	private String clientId;
-
-	private String consumerId;
-
-	private String consumerGroupId;
-
-	private String producerClientId;
-
-	private int producerRetries;
-
-	private String producerAckMode;
-
-	private String producer;
 }

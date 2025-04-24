@@ -1,5 +1,6 @@
 package com.example.messaging.jms.producer.impl;
 
+import com.example.messaging.common.exception.ProducerDeliveryException;
 import com.example.messaging.jms.producer.JmsProducer;
 import jakarta.jms.*;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ public class MyJmsProducer implements JmsProducer {
 			jmsProducer.send(destination, message);
 			if (log.isTraceEnabled()) log.trace("Sent message {} to destination {}", id, destination);
 		} catch (JMSException ex) {
-			log.error("Customer does not like the dish", ex);
+			throw new ProducerDeliveryException(String.format("Failed to send message %s to topic %s", content, destination));
 		}
 	}
 

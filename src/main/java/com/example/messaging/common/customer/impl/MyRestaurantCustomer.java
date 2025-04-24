@@ -1,6 +1,6 @@
 package com.example.messaging.common.customer.impl;
 
-import com.example.messaging.common.customer.Customer;
+import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.exception.CustomerGreetException;
 import com.example.messaging.common.model.Dish;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 
 @Slf4j
-public class MyCustomer implements Customer {
+public class MyRestaurantCustomer implements RestaurantCustomer {
 
 	private List<Dish> dishes;
 
@@ -19,7 +19,7 @@ public class MyCustomer implements Customer {
 
 	private final int id;
 
-	public MyCustomer(int amountOfDishesToGenerate, int id) {
+	public MyRestaurantCustomer(int amountOfDishesToGenerate, int id) {
 		dishes = new ArrayList<>(amountOfDishesToGenerate);
 		this.amountOfDishesToGenerate = amountOfDishesToGenerate;
 		this.id = id;

@@ -1,4 +1,4 @@
-package com.example.messaging.common.config;
+package com.example.messaging.common.util;
 
 import lombok.Getter;
 import lombok.Setter;

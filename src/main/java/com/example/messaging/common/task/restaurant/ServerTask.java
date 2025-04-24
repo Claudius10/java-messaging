@@ -1,7 +1,9 @@
-package com.example.messaging.common.task.impl;
+package com.example.messaging.common.task.restaurant;
 
+import com.example.messaging.common.exception.ProducerDeliveryException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
+import com.example.messaging.common.producer.backup.BackupProducer;
 import com.example.messaging.common.task.MessagingTask;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ public class ServerTask implements MessagingTask {
 	private final BlockingQueue<Dish> completedDishes;
 
 	private final Producer producer;
+
+	private final BackupProducer backupProducer;
 
 	private final int pollTimeOut;
 
@@ -62,6 +66,8 @@ public class ServerTask implements MessagingTask {
 					in++;
 					serve(dish);
 					out++;
+				} else {
+					handleIdle();
 				}
 			}
 		} catch (InterruptedException ex) {
@@ -73,7 +79,21 @@ public class ServerTask implements MessagingTask {
 
 	private void serve(Dish dish) {
 		if (log.isTraceEnabled()) log.trace("Served dish {}", dish.getId());
-		producer.sendTextMessage(dish.getId(), dish.getName());
+		try {
+			producer.sendTextMessage(dish.getId(), dish.getName());
+		} catch (ProducerDeliveryException ex) {
+			backupProducer.sendTextMessage(dish.getId(), dish.getName());
+		}
+	}
+
+	private void handleIdle() {
+		long now = System.currentTimeMillis();
+		long elapsed = now - timeOfLastDish;
+
+		if (elapsed > TimeUnit.SECONDS.toMillis(30)) {
+			if (log.isTraceEnabled()) log.trace("Processing backup...");
+			backupProducer.resend(producer);
+		}
 	}
 
 	@Override
