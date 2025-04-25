@@ -1,5 +1,6 @@
 package com.example.messaging.common.task.restaurant;
 
+import com.example.messaging.common.exception.BackupProcessException;
 import com.example.messaging.common.exception.ProducerDeliveryException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
@@ -25,6 +26,8 @@ public class ServerTask implements MessagingTask {
 	private final Producer producer;
 
 	private final BackupProducer backupProducer;
+
+	private final int consumerIdle;
 
 	private final int pollTimeOut;
 
@@ -52,7 +55,7 @@ public class ServerTask implements MessagingTask {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
-					producer.close();
+//					producer.close();
 					isWorking = false;
 					endGate.countDown();
 					if (log.isTraceEnabled()) log.trace("Server shift ended");
@@ -78,7 +81,7 @@ public class ServerTask implements MessagingTask {
 	}
 
 	private void serve(Dish dish) {
-		if (log.isTraceEnabled()) log.trace("Served dish {}", dish.getId());
+		if (log.isTraceEnabled()) log.trace("Served {}", dish.getName());
 		try {
 			producer.sendTextMessage(dish.getId(), dish.getName());
 		} catch (ProducerDeliveryException ex) {
@@ -87,12 +90,17 @@ public class ServerTask implements MessagingTask {
 	}
 
 	private void handleIdle() {
-		long now = System.currentTimeMillis();
-		long elapsed = now - timeOfLastDish;
+		if ((System.currentTimeMillis() - timeOfLastDish) > TimeUnit.SECONDS.toMillis(consumerIdle)) {
+			processBackedUpMessages();
+		}
+	}
 
-		if (elapsed > TimeUnit.SECONDS.toMillis(30)) {
-			if (log.isTraceEnabled()) log.trace("Processing backup...");
+	private void processBackedUpMessages() {
+		if (log.isTraceEnabled()) log.trace("Processing backup...");
+		try {
 			backupProducer.resend(producer);
+		} catch (BackupProcessException ex) {
+			log.warn("Failed to resend backup: {}", ex.getMessage());
 		}
 	}
 

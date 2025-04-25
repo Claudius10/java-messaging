@@ -68,6 +68,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>activemq</artifactId>
+            <version>1.21.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Boot Starter Test JUnit hasn't been updated for jdk 24 yet -->
         <!-- JUnit 5 dependencies for jdk 24 -->
 

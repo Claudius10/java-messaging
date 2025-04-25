@@ -21,7 +21,7 @@ public class ChefTask implements MessagingTask {
 
 	private final RestaurantCustomer customer;
 
-	private final int greetTimeOut;
+	private final int producerIdle;
 
 	private long in = 0;
 
@@ -33,12 +33,12 @@ public class ChefTask implements MessagingTask {
 
 	private long timeOfLastDish = 0;
 
-	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, RestaurantCustomer customer, int greetTimeOut) {
+	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, RestaurantCustomer customer, int producerIdle) {
 		this.startGate = startGate;
 		this.endGate = endGate;
 		this.completedDishes = completedDishes;
 		this.customer = customer;
-		this.greetTimeOut = greetTimeOut;
+		this.producerIdle = producerIdle;
 	}
 
 	@Override
@@ -90,18 +90,19 @@ public class ChefTask implements MessagingTask {
 	}
 
 	private void handleIdle() {
-		long now = System.currentTimeMillis();
-		long elapsed = now - timeOfLastDish;
+		if ((System.currentTimeMillis() - timeOfLastDish) > TimeUnit.SECONDS.toMillis(producerIdle)) {
+			greetCustomer();
+		}
+	}
 
-		if (elapsed > TimeUnit.SECONDS.toMillis(greetTimeOut)) {
-			if (log.isTraceEnabled()) log.trace("Greeting customer...");
-			try {
-				customer.greet();
-				isWorking = true;
-			} catch (CustomerGreetException ex) {
-				isWorking = false;
-				if (log.isTraceEnabled()) log.trace("Customer response: '{}'", ex.getMessage());
-			}
+	private void greetCustomer() {
+		if (log.isTraceEnabled()) log.trace("Greeting customer...");
+		try {
+			customer.greet();
+			isWorking = true;
+		} catch (CustomerGreetException ex) {
+			isWorking = false;
+			if (log.isTraceEnabled()) log.trace("Customer response: '{}'", ex.getMessage());
 		}
 	}
 

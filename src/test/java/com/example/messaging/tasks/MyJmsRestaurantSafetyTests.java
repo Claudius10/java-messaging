@@ -2,11 +2,11 @@ package com.example.messaging.tasks;
 
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.producer.backup.BackupProducer;
-import com.example.messaging.jms.config.JmsConnectionFactory;
-import com.example.messaging.jms.restaurant.MyJmsRestaurant;
 import com.example.messaging.common.util.MessagingStat;
-import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.common.util.RestaurantProperties;
+import com.example.messaging.jms.config.JmsConnectionFactory;
+import com.example.messaging.jms.config.JmsProperties;
+import com.example.messaging.jms.restaurant.MyJmsRestaurant;
 import jakarta.jms.CompletionListener;
 import jakarta.jms.ExceptionListener;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +47,8 @@ public class MyJmsRestaurantSafetyTests {
 		RestaurantProperties restaurantProperties = new RestaurantProperties();
 		restaurantProperties.setDishesToProduce(amount);
 		restaurantProperties.setDishesQueueCapacity(capacity);
-		restaurantProperties.setTakeGiveUp(2);
-		restaurantProperties.setGreetTimeOut(99999);
+		restaurantProperties.setConsumerIdle(999999);
+		restaurantProperties.setProducerIdle(999999);
 
 		JmsProperties jmsProperties = new JmsProperties();
 		jmsProperties.setUser("user");
@@ -56,6 +56,7 @@ public class MyJmsRestaurantSafetyTests {
 		jmsProperties.setDestination("queue");
 		jmsProperties.setProducer("NoopProducer");
 		jmsProperties.setMaxConnections(pairs);
+		jmsProperties.setPollTimeOut(2);
 
 		JmsConnectionFactory jmsConnectionFactory = mock(JmsConnectionFactory.class);
 		ExceptionListener exceptionListener = mock(ExceptionListener.class);

@@ -19,15 +19,15 @@ public class JmsController {
 
 	private final MessagingManager myJmsRestaurant;
 
-	@PostMapping("/open")
-	public ResponseEntity<?> open() {
+	@PostMapping("/producer/start")
+	public ResponseEntity<?> startProducer() {
 		log.info("Opening JMS restaurant...");
 		myJmsRestaurant.open();
 		return ResponseEntity.ok().build();
 	}
 
-	@PostMapping("/close")
-	public ResponseEntity<?> close() {
+	@PostMapping("/producer/stop")
+	public ResponseEntity<?> stopProducer() {
 		try {
 			log.info("Closing JMS restaurant...");
 			myJmsRestaurant.close();

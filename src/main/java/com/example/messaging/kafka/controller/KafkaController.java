@@ -2,7 +2,7 @@ package com.example.messaging.kafka.controller;
 
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.kafka.config.KafkaProperties;
-import com.example.messaging.kafka.consumer.KafkaConsumerOperations;
+import com.example.messaging.kafka.consumer.KafkaConsumerManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +24,7 @@ public class KafkaController {
 
 	private final KafkaProperties kafkaProperties;
 
-	private final KafkaConsumerOperations consumerOperations;
+	private final KafkaConsumerManager consumerOperations;
 
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {

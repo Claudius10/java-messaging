@@ -40,7 +40,7 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 
 	private final KafkaTemplate<Long, String> kafkaTemplate;
 
-	private final BackupProducer myBackupProducer;
+	private final BackupProducer myKafkaBackupProducer;
 
 	private BlockingQueue<Dish> dishesQueue;
 
@@ -58,7 +58,17 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 
 	protected void startProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-			MessagingTask serverTask = new ServerTask(startGate, endGate, dishesQueue, buildProducer(), myBackupProducer, restaurantProperties.getTakeGiveUp());
+
+			MessagingTask serverTask = new ServerTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					buildProducer(),
+					myKafkaBackupProducer,
+					restaurantProperties.getConsumerIdle(),
+					kafkaProperties.getPollTimeOut()
+			);
+
 			consumerTasks.add(serverTask);
 			workers.execute(serverTask);
 		}
@@ -67,7 +77,15 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 	protected void startConsumers(int amount) {
 		for (int i = 0; i < amount; i++) {
 			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
-			MessagingTask chefTask = new ChefTask(startGate, endGate, dishesQueue, customer, restaurantProperties.getGreetTimeOut());
+
+			MessagingTask chefTask = new ChefTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					customer,
+					restaurantProperties.getProducerIdle()
+			);
+
 			producerTasks.add(chefTask);
 			workers.execute(chefTask);
 		}

@@ -17,10 +17,7 @@ import com.example.messaging.jms.config.JmsConnectionFactory;
 import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.producer.JmsProducer;
 import com.example.messaging.jms.producer.impl.MyJmsProducer;
-import jakarta.jms.CompletionListener;
-import jakarta.jms.DeliveryMode;
-import jakarta.jms.ExceptionListener;
-import jakarta.jms.Session;
+import jakarta.jms.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -49,11 +46,21 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 
 	private final CompletionListener myCompletionListener;
 
-	private final BackupProducer myBackupProducer;
+	private final BackupProducer myJmsBackupProducer;
 
 	private BlockingQueue<Dish> dishesQueue;
 
+	private JMSContext jmsContext;
+
+	private JMSProducer jmsProducer;
+
 	public void open() {
+		jmsContext = connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
+		jmsContext.setExceptionListener(myExceptionListener);
+		jmsProducer = jmsContext.createProducer();
+		jmsProducer.setAsync(myCompletionListener);
+		jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
+
 		dishesQueue = new LinkedBlockingQueue<>(restaurantProperties.getDishesQueueCapacity());
 		int maxCustomers = jmsProperties.getMaxConnections();
 		super.setup(maxCustomers);
@@ -63,11 +70,22 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 	public void close() throws InterruptedException {
 		super.stop();
 		super.printStats();
+		jmsContext.close();
 	}
 
 	protected void startProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-			MessagingTask serverTask = new ServerTask(startGate, endGate, dishesQueue, buildProducer(), myBackupProducer, restaurantProperties.getTakeGiveUp());
+
+			MessagingTask serverTask = new ServerTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					new MyJmsProducer(jmsContext, jmsProducer, jmsProperties.getDestination()),
+					myJmsBackupProducer,
+					restaurantProperties.getConsumerIdle(),
+					jmsProperties.getPollTimeOut()
+			);
+
 			consumerTasks.add(serverTask);
 			workers.execute(serverTask);
 		}
@@ -76,7 +94,15 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 	protected void startConsumers(int amount) {
 		for (int i = 0; i < amount; i++) {
 			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
-			MessagingTask chefTask = new ChefTask(startGate, endGate, dishesQueue, customer, restaurantProperties.getGreetTimeOut());
+
+			MessagingTask chefTask = new ChefTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					customer,
+					restaurantProperties.getProducerIdle()
+			);
+
 			producerTasks.add(chefTask);
 			workers.execute(chefTask);
 		}
@@ -87,11 +113,13 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 			return new NoopProducer();
 		}
 
-		JmsProducer jmsProducer = new MyJmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
-		jmsProducer.getContext().setExceptionListener(myExceptionListener);
-		jmsProducer.getProducer().setAsync(myCompletionListener);
-		jmsProducer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
-		return jmsProducer;
+//		JmsProducer jmsProducer = new MyJmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
+		JMSProducer jmsProducer = jmsContext.createProducer();
+//		jmsProducer.getContext().setExceptionListener(myExceptionListener);
+		jmsProducer.setAsync(myCompletionListener);
+		jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
+		JmsProducer producer = new MyJmsProducer(jmsContext, jmsProducer, jmsProperties.getDestination());
+		return producer;
 	}
 
 	@Override

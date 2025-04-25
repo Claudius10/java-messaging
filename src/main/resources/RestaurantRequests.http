@@ -2,6 +2,12 @@
 POST http://localhost:8080/stop
 
 ###
+POST http://localhost:8080/jms/producer/start
+
+###
+POST http://localhost:8080/jms/producer/stop
+
+###
 POST http://localhost:8080/kafka/producer/start
 
 ###

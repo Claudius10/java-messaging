@@ -15,9 +15,9 @@ public class RestaurantProperties {
 
 	private int dishesQueueCapacity;
 
-	private int takeGiveUp;
-
 	private int maxConnections;
 
-	private int greetTimeOut;
+	private int producerIdle;
+
+	private int consumerIdle;
 }
