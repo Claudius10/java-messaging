@@ -19,6 +19,6 @@ public class MyProducerListener implements ProducerListener<Long, String> {
 
 	@Override
 	public void onError(ProducerRecord<Long, String> producerRecord, RecordMetadata recordMetadata, Exception exception) {
-		log.error("Error with record: {}", producerRecord.toString(), exception);
+		log.error("Error delivering record: {}", producerRecord.toString(), exception);
 	}
 }

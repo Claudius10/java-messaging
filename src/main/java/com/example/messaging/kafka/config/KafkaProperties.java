@@ -29,7 +29,7 @@ public class KafkaProperties {
 
 	private String producer;
 
-	private String consumerId;
+	private String consumerClientId;
 
 	private int consumerTimeoutMs;
 

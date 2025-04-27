@@ -1,6 +1,8 @@
 package com.example.messaging.jms.controller;
 
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.jms.config.JmsProperties;
+import com.example.messaging.jms.consumer.JmsConsumerManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -19,6 +21,10 @@ public class JmsController {
 
 	private final MessagingManager myJmsRestaurant;
 
+	private final JmsProperties jmsProperties;
+
+	private final JmsConsumerManager consumerOperations;
+
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
 		log.info("Opening JMS restaurant...");
@@ -36,6 +42,18 @@ public class JmsController {
 			log.error("Interrupted with closing JMS Restaurant: {}", e.getMessage());
 			return ResponseEntity.internalServerError().body(e.getMessage());
 		}
+	}
+
+	@PostMapping("/consumer/start")
+	public ResponseEntity<?> startConsumer() {
+		consumerOperations.start(jmsProperties.getConsumerClientId());
+		return ResponseEntity.ok("Consumer started");
+	}
+
+	@PostMapping("/consumer/stop")
+	public ResponseEntity<?> stopConsumer() {
+		consumerOperations.stop(jmsProperties.getConsumerClientId());
+		return ResponseEntity.ok("Consumer stopped");
 	}
 
 	@GetMapping("/stats")

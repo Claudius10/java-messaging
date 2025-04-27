@@ -44,21 +44,23 @@ public class ServerTask implements MessagingTask {
 	@Override
 	public void run() {
 		startWork();
+		if (log.isTraceEnabled()) log.trace("Server shift ended");
 	}
 
 	private void startWork() {
 		try {
+
 			if (log.isTraceEnabled()) log.trace("Waiting on coworkers...");
 			startGate.await();
 			if (log.isTraceEnabled()) log.trace("All coworkers ready, starting work!");
 			isWorking = true;
+
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel && completedDishes.isEmpty()) {
-//					producer.close();
+					producer.close();
 					isWorking = false;
 					endGate.countDown();
-					if (log.isTraceEnabled()) log.trace("Server shift ended");
 					break;
 				}
 

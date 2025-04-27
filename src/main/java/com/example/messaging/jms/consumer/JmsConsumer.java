@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class JmsConsumer {
 
-	@JmsListener(destination = "${jms.destination}", concurrency = "3")
+	@JmsListener(id = "${jms.consumer-client-id}", destination = "${jms.destination}", concurrency = "3")
 	public void receive(String content) {
 		if (log.isTraceEnabled()) log.trace("Received message: {}", content);
 	}

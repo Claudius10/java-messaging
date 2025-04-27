@@ -16,6 +16,8 @@ public class MyKafkaAdmin {
 	private final KafkaAdmin admin;
 
 	public String clusterId() {
+		if (admin == null) return null;
+
 		log.info("Attempting communicate with the Kafka broker. Timeout in 30 seconds.");
 
 		String id = admin.clusterId();

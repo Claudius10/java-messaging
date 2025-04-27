@@ -32,6 +32,7 @@ public class MyKafkaProducer implements KafkaProducer {
 	@Override
 	public void close() {
 		if (log.isTraceEnabled()) log.trace("Closing Kafka Producer...");
-		kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
+		kafkaTemplate.getProducerFactory().reset();
+//		kafkaTemplate.getProducerFactory().closeThreadBoundProducer(); // if setProducerPerThread == true
 	}
 }

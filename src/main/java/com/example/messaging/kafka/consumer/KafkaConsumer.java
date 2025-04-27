@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class KafkaConsumer {
 
-	@KafkaListener(id = "${kafka.consumer-id}", groupId = "${kafka.consumer-group-id}", topics = "${kafka.topic}")
+	@KafkaListener(id = "${kafka.consumer-client-id}", groupId = "${kafka.consumer-group-id}", topics = "${kafka.topic}")
 	public void receive(ConsumerRecord<Integer, String> record) {
 		if (log.isTraceEnabled()) {
 			log.trace("Message topic: {}", record.topic());

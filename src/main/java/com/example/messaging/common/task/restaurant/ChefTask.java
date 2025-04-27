@@ -44,19 +44,21 @@ public class ChefTask implements MessagingTask {
 	@Override
 	public void run() {
 		startWork();
+		if (log.isTraceEnabled()) log.trace("Chef shift ended");
 	}
 
 	private void startWork() {
 		try {
+
 			if (log.isTraceEnabled()) log.trace("Waiting on coworkers...");
 			startGate.await();
 			if (log.isTraceEnabled()) log.trace("All coworkers ready, starting work!");
+
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel) {
 					isWorking = false;
 					endGate.countDown();
-					if (log.isTraceEnabled()) log.trace("Chef shift ended");
 					break;
 				}
 

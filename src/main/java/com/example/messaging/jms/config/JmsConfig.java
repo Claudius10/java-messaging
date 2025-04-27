@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.util.backoff.FixedBackOff;
 
 @Profile("Jms")
 @Configuration
@@ -21,26 +22,19 @@ public class JmsConfig {
 	@Bean
 	ConnectionFactory connectionFactory() {
 		JmsPoolConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
-		connectionFactory.setConnectionFactory(resolveConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
-		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections());
+		connectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
+		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections() * 2); // used for the ListenerContainerFactory (Consumers) and for creating JMSContext (Producers)
 		return connectionFactory;
 	}
 
 	@Bean
 	public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
 		DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+		factory.setClientId(jmsProperties.getConsumerClientId());
+		factory.setBackOff(new FixedBackOff(jmsProperties.getReconnectionIntervalMs(), jmsProperties.getReconnectionMaxAttempts()));
 		factory.setConnectionFactory(connectionFactory);
 		factory.setConcurrency(String.valueOf(jmsProperties.getMaxConnections()));
 		factory.setAutoStartup(false);
 		return factory;
-	}
-
-	private ConnectionFactory resolveConnectionFactory(String url, String username, String password) {
-		switch (jmsProperties.getFactory()) {
-			case "ActiveMQConnectionFactory":
-				return new ActiveMQConnectionFactory(url, username, password);
-			default:
-				return new ActiveMQConnectionFactory(url, username, password);
-		}
 	}
 }

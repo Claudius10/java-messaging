@@ -1,11 +1,23 @@
+# APP
+
 ###
 POST http://localhost:8080/stop
+
+# JMS
 
 ###
 POST http://localhost:8080/jms/producer/start
 
 ###
 POST http://localhost:8080/jms/producer/stop
+
+###
+POST http://localhost:8080/jms/consumer/start
+
+###
+POST http://localhost:8080/jms/consumer/stop
+
+# Kafka
 
 ###
 POST http://localhost:8080/kafka/producer/start

@@ -48,7 +48,7 @@ public class KafkaController {
 	@PostMapping("/consumer/start")
 	public ResponseEntity<?> startConsumer() {
 		try {
-			consumerOperations.start(kafkaProperties.getConsumerId());
+			consumerOperations.start(kafkaProperties.getConsumerClientId());
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
 		}
@@ -59,7 +59,7 @@ public class KafkaController {
 	@PostMapping("/consumer/stop")
 	public ResponseEntity<?> stopConsumer() {
 		try {
-			consumerOperations.stop(kafkaProperties.getConsumerId());
+			consumerOperations.stop(kafkaProperties.getConsumerClientId());
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
 		}

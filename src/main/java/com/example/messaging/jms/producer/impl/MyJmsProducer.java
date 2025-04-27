@@ -14,9 +14,9 @@ public class MyJmsProducer implements JmsProducer {
 
 	private final Destination destination;
 
-	public MyJmsProducer(JMSContext jmsContext, JMSProducer jmsProducer, String destinationName) {
+	public MyJmsProducer(JMSContext jmsContext, String destinationName) {
 		this.jmsContext = jmsContext;
-		this.jmsProducer = jmsProducer;
+		this.jmsProducer = jmsContext.createProducer();
 		this.destination = destinationName.contains("queue") ? jmsContext.createQueue(destinationName) : jmsContext.createTopic(destinationName);
 	}
 

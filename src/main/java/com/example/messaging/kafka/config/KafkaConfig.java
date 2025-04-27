@@ -16,7 +16,6 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.support.ProducerListener;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,13 +31,10 @@ public class KafkaConfig {
 	// Consumer
 
 	@Bean
-	KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<Long, String>> kafkaListenerContainerFactory(
-			ConsumerFactory<Long, String> consumerFactory,
-			ThreadPoolTaskScheduler workers) {
+	KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<Long, String>> kafkaListenerContainerFactory(ConsumerFactory<Long, String> consumerFactory) {
 		ConcurrentKafkaListenerContainerFactory<Long, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory);
 		factory.setConcurrency(kafkaProperties.getMaxConnections());
-		factory.getContainerProperties().setListenerTaskExecutor(workers);
 		factory.getContainerProperties().setPollTimeout(kafkaProperties.getPollTimeOut());
 		factory.setAutoStartup(false);
 		return factory;
@@ -52,8 +48,7 @@ public class KafkaConfig {
 	private Map<String, Object> consumerConfigs() {
 		Map<String, Object> props = new HashMap<>();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBrokerUrl());
-		props.put(ConsumerConfig.CLIENT_ID_CONFIG, kafkaProperties.getConsumerId());
-		//props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, kafkaProperties.getConsumerTimeoutMs());
+		props.put(ConsumerConfig.CLIENT_ID_CONFIG, kafkaProperties.getConsumerClientId());
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		return props;
@@ -71,7 +66,7 @@ public class KafkaConfig {
 	@Bean
 	public ProducerFactory<Long, String> producerFactory() {
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs());
-		producerFactory.setProducerPerThread(true);
+//		producerFactory.setProducerPerThread(true); // does not affect performance
 		return producerFactory;
 	}
 
