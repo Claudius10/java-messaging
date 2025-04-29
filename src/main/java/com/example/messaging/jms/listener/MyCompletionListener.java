@@ -3,9 +3,7 @@ package com.example.messaging.jms.listener;
 import jakarta.jms.CompletionListener;
 import jakarta.jms.Message;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 
-@Profile("Jms")
 @Slf4j
 public class MyCompletionListener implements CompletionListener {
 
