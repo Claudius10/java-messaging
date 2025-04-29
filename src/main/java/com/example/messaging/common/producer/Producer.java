@@ -1,10 +1,12 @@
 package com.example.messaging.common.producer;
 
-import com.example.messaging.common.exception.ProducerDeliveryException;
+import com.example.messaging.common.exception.producer.ProducerDeliveryException;
 
-public interface Producer {
+public interface Producer<T> {
+
+	void sendTextMessage(T object) throws ProducerDeliveryException;
 
 	void close();
 
-	void sendTextMessage(long id, String content) throws ProducerDeliveryException;
+	boolean isConnected();
 }

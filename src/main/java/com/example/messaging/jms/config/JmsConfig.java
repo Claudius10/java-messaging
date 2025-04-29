@@ -31,7 +31,7 @@ public class JmsConfig {
 	public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
 		DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
 		factory.setClientId(jmsProperties.getConsumerClientId());
-		factory.setBackOff(new FixedBackOff(jmsProperties.getReconnectionIntervalMs(), jmsProperties.getReconnectionMaxAttempts()));
+		factory.setBackOff(new FixedBackOff(jmsProperties.getReconnectionIntervalMs(), 9999));
 		factory.setConnectionFactory(connectionFactory);
 		factory.setConcurrency(String.valueOf(jmsProperties.getMaxConnections()));
 		factory.setAutoStartup(false);

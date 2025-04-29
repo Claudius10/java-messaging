@@ -18,12 +18,12 @@ public class MyKafkaAdmin {
 	public String clusterId() {
 		if (admin == null) return null;
 
-		log.info("Attempting communicate with the Kafka broker. Timeout in 30 seconds.");
+		if (log.isTraceEnabled()) log.trace("Attempting communicate with the Kafka broker. Timeout in 30 seconds.");
 
 		String id = admin.clusterId();
 
 		if (id == null) {
-			throw new KafkaException("Error communicating with the broker");
+			throw new KafkaException("Error communicating with the Kafka broker");
 		}
 
 		if (log.isTraceEnabled()) log.trace("Cluster id: {}", id);

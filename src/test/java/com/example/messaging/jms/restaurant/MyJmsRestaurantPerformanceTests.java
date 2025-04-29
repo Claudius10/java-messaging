@@ -2,14 +2,14 @@ package com.example.messaging.jms.restaurant;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.example.messaging.common.backup.BackupProvider;
+import com.example.messaging.common.backup.impl.NoopBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
-import com.example.messaging.jms.config.JmsConnectionFactory;
 import com.example.messaging.jms.config.JmsProperties;
-import com.example.messaging.jms.listener.MyCompletionListener;
-import com.example.messaging.jms.listener.MyExceptionListener;
-import com.example.messaging.jms.producer.impl.MyJmsBackupProducer;
+import jakarta.jms.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,11 +39,13 @@ public class MyJmsRestaurantPerformanceTests {
 
 	@Test
 	void testRestaurantPerformance() throws InterruptedException {
-		int trials = 10;
-		int maxTestDurationMs = 10000;
+
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
+		int trials = 10;
+		int maxTestDurationMs = 10000;
 		int dishesToProduce = 1000000;
+
 		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce);
 
 		log.info("Average items sent under ten seconds over {} trials: {}", trials, results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0));
@@ -53,7 +55,7 @@ public class MyJmsRestaurantPerformanceTests {
 		// dishes to produce = 1.000.000
 		// how many dishes can be served in 10 seconds?
 
-		ThreadPoolTaskScheduler workers = workers();
+		ThreadPoolTaskScheduler workers = workers(threadPairs);
 
 		for (int i = 0; i < trials; i++) {
 			artemis.start();
@@ -78,28 +80,27 @@ public class MyJmsRestaurantPerformanceTests {
 		jmsProperties.setPassword(artemis.getPassword());
 		jmsProperties.setDestination("queue-table-A");
 		jmsProperties.setProducer("JmsProducer");
-		jmsProperties.setMaxConnections(pairs * 2);
+		jmsProperties.setMaxConnections(pairs);
 		jmsProperties.setPollTimeOut(2);
 		jmsProperties.setConsumerClientId("consumer");
 		jmsProperties.setReconnectionIntervalMs(5000);
-		jmsProperties.setReconnectionMaxAttempts(5);
 
 		log.info("Broker URL {}", jmsProperties.getBrokerUrl());
 
-		JmsPoolConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
-		connectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
-		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections());
+		ConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
+		JmsPoolConnectionFactory jmsConnectionFactory = (JmsPoolConnectionFactory) connectionFactory;
+		jmsConnectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
+		jmsConnectionFactory.setMaxConnections(jmsProperties.getMaxConnections()); // only threads for producers, not using consumers for this test
 
-		JmsConnectionFactory jmsConnectionFactory = new JmsConnectionFactory(connectionFactory);
+		BackupProvider<Dish> backupProvider = new NoopBackupProvider();
 
 		MessagingManager myJmsRestaurant = new MyJmsRestaurant(
 				workers,
 				restaurantProperties,
 				jmsProperties,
-				jmsConnectionFactory,
-				new MyExceptionListener(),
-				new MyCompletionListener(),
-				new MyJmsBackupProducer());
+				connectionFactory,
+				backupProvider
+		);
 
 		// Act
 
@@ -110,10 +111,10 @@ public class MyJmsRestaurantPerformanceTests {
 		results.add(myJmsRestaurant.getStats().get(MessagingStat.CONSUMER_OUT));
 	}
 
-	private ThreadPoolTaskScheduler workers() {
+	private ThreadPoolTaskScheduler workers(int pairs) {
 		ThreadPoolTaskScheduler taskExecutor = new ThreadPoolTaskScheduler();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setPoolSize(6);
+		taskExecutor.setPoolSize(pairs * 2);
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		taskExecutor.initialize();
 		return taskExecutor;
@@ -123,7 +124,7 @@ public class MyJmsRestaurantPerformanceTests {
 /*
  --- RESULTS ---
 
- a) with JMXContext and JMSProducer per thread -> 295955 (avg 10 trials)
+ a) with JMXContext and JMSProducer per thread -> 295955 (avg 10 trials) / 321622 (avg 10 trials)
  b) with JMSProducer per thread (same JMSContext for all threads) -> 271152 (avg 10 trials)
  c) same JMSContext and JMSProducer for all threads -> 274172 (avg 10 trials)
 

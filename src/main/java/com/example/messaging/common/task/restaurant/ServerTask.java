@@ -1,16 +1,17 @@
 package com.example.messaging.common.task.restaurant;
 
+import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.exception.BackupProcessException;
-import com.example.messaging.common.exception.ProducerDeliveryException;
+import com.example.messaging.common.exception.producer.ProducerDeliveryException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
-import com.example.messaging.common.producer.backup.BackupProducer;
 import com.example.messaging.common.task.MessagingTask;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -23,9 +24,11 @@ public class ServerTask implements MessagingTask {
 
 	private final BlockingQueue<Dish> completedDishes;
 
-	private final Producer producer;
+	private final Producer<Dish> producer;
 
-	private final BackupProducer backupProducer;
+	private final BackupProvider<Dish> backupProvider;
+
+	private final Semaphore backupPermit;
 
 	private final int consumerIdle;
 
@@ -85,22 +88,31 @@ public class ServerTask implements MessagingTask {
 	private void serve(Dish dish) {
 		if (log.isTraceEnabled()) log.trace("Served {}", dish.getName());
 		try {
-			producer.sendTextMessage(dish.getId(), dish.getName());
+			producer.sendTextMessage(dish);
 		} catch (ProducerDeliveryException ex) {
-			backupProducer.sendTextMessage(dish.getId(), dish.getName());
+			backupProvider.write(dish);
 		}
 	}
 
-	private void handleIdle() {
+	private void handleIdle() throws InterruptedException {
 		if ((System.currentTimeMillis() - timeOfLastDish) > TimeUnit.SECONDS.toMillis(consumerIdle)) {
+			boolean acquired = backupPermit.tryAcquire(1, TimeUnit.SECONDS);
+			if (!acquired) return;
+			if (log.isTraceEnabled()) log.trace("Processing backup...");
 			processBackedUpMessages();
+			backupPermit.release();
 		}
 	}
 
 	private void processBackedUpMessages() {
-		if (log.isTraceEnabled()) log.trace("Processing backup...");
 		try {
-			backupProducer.resend(producer);
+			backupProvider.open();
+			if (backupProvider.hasMoreElements() && producer.isConnected()) {
+				while (backupProvider.hasMoreElements()) {
+					producer.sendTextMessage(backupProvider.read());
+				}
+			}
+			backupProvider.close();
 		} catch (BackupProcessException ex) {
 			log.warn("Failed to resend backup: {}", ex.getMessage());
 		}

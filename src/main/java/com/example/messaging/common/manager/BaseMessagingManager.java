@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -21,6 +22,8 @@ public abstract class BaseMessagingManager {
 	protected final CountDownLatch startGate = new CountDownLatch(1);
 
 	protected CountDownLatch endGate;
+
+	protected final Semaphore backupProviderPermit = new Semaphore(1);
 
 	protected void setup(int pairs) {
 		producerTasks = new ArrayList<>(pairs);

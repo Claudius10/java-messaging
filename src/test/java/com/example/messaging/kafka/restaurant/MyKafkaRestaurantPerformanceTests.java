@@ -2,12 +2,14 @@ package com.example.messaging.kafka.restaurant;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.example.messaging.common.backup.BackupProvider;
+import com.example.messaging.common.backup.impl.NoopBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
-import com.example.messaging.kafka.producer.impl.MyKafkaBackupProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -44,11 +46,13 @@ public class MyKafkaRestaurantPerformanceTests {
 
 	@Test
 	void testRestaurantPerformance() throws InterruptedException {
-		int trials = 10;
-		int maxTestDurationMs = 10000;
+
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
+		int trials = 10;
+		int maxTestDurationMs = 10000;
 		int dishesToProduce = 1000000;
+
 		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce);
 
 		log.info("Average items sent under ten seconds over {} trials: {}", trials, results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0));
@@ -58,7 +62,7 @@ public class MyKafkaRestaurantPerformanceTests {
 		// dishes to produce = 1.000.000
 		// how many dishes can be served in 10 seconds?
 
-		ThreadPoolTaskScheduler workers = workers();
+		ThreadPoolTaskScheduler workers = workers(threadPairs);
 
 		for (int i = 0; i < trials; i++) {
 			kafka.start();
@@ -100,13 +104,16 @@ public class MyKafkaRestaurantPerformanceTests {
 		KafkaTemplate<Long, String> kafkaTemplate = new KafkaTemplate<>(producerFactory);
 		KafkaAdmin kafkaAdmin = kafkaTemplate.getKafkaAdmin();
 		MyKafkaAdmin myKafkaAdmin = new MyKafkaAdmin(kafkaAdmin);
+		BackupProvider<Dish> backupProvider = new NoopBackupProvider();
 
 		MessagingManager myJmsRestaurant = new MyKafkaRestaurant(
 				workers,
 				restaurantProperties,
 				kafkaProperties,
 				kafkaTemplate,
-				new MyKafkaBackupProducer(myKafkaAdmin));
+				myKafkaAdmin,
+				backupProvider
+		);
 
 		// Act
 
@@ -145,14 +152,14 @@ public class MyKafkaRestaurantPerformanceTests {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(props);
-		producerFactory.setProducerPerThread(true);
+		producerFactory.setProducerPerThread(false);
 		return producerFactory;
 	}
 
-	private ThreadPoolTaskScheduler workers() {
+	private ThreadPoolTaskScheduler workers(int pairs) {
 		ThreadPoolTaskScheduler taskExecutor = new ThreadPoolTaskScheduler();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setPoolSize(6);
+		taskExecutor.setPoolSize(pairs * 2);
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		taskExecutor.initialize();
 		return taskExecutor;
@@ -163,6 +170,6 @@ public class MyKafkaRestaurantPerformanceTests {
  --- RESULTS ---
 
  a) each thread with its own KafkaTemplate: 363319 (avg 10 trials)
- b) all threads using the same KafkaTemplate: 361412 (avg 10 trials)
+ b) all threads using the same KafkaTemplate: 361412 (avg 10 trials) / 381113 (avg 10 trials)
 
  */

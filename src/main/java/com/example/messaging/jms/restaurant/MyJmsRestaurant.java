@@ -1,29 +1,25 @@
 package com.example.messaging.jms.restaurant;
 
+import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.manager.BaseMessagingManager;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
-import com.example.messaging.common.producer.backup.BackupProducer;
 import com.example.messaging.common.producer.impl.NoopProducer;
 import com.example.messaging.common.task.MessagingTask;
 import com.example.messaging.common.task.restaurant.ChefTask;
 import com.example.messaging.common.task.restaurant.ServerTask;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
-import com.example.messaging.jms.config.JmsConnectionFactory;
 import com.example.messaging.jms.config.JmsProperties;
-import com.example.messaging.jms.producer.JmsProducer;
 import com.example.messaging.jms.producer.impl.MyJmsProducer;
-import jakarta.jms.CompletionListener;
-import jakarta.jms.DeliveryMode;
-import jakarta.jms.ExceptionListener;
-import jakarta.jms.Session;
+import jakarta.jms.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -37,19 +33,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class MyJmsRestaurant extends BaseMessagingManager implements MessagingManager {
 
-	private final ThreadPoolTaskScheduler workers;
+	private final TaskScheduler workers;
 
 	private final RestaurantProperties restaurantProperties;
 
 	private final JmsProperties jmsProperties;
 
-	private final JmsConnectionFactory connectionFactory;
+	private final ConnectionFactory connectionFactory;
 
-	private final ExceptionListener myExceptionListener;
-
-	private final CompletionListener myCompletionListener;
-
-	private final BackupProducer myJmsBackupProducer;
+	private final BackupProvider<Dish> dishBackupProvider;
 
 	private BlockingQueue<Dish> dishesQueue;
 
@@ -67,24 +59,6 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 
 	protected void startProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-
-			MessagingTask serverTask = new ServerTask(
-					startGate,
-					endGate,
-					dishesQueue,
-					buildProducer(),
-					myJmsBackupProducer,
-					restaurantProperties.getConsumerIdle(),
-					jmsProperties.getPollTimeOut()
-			);
-
-			consumerTasks.add(serverTask);
-			workers.execute(serverTask);
-		}
-	}
-
-	protected void startConsumers(int amount) {
-		for (int i = 0; i < amount; i++) {
 			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
 
 			MessagingTask chefTask = new ChefTask(
@@ -96,20 +70,35 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 			);
 
 			producerTasks.add(chefTask);
-			workers.execute(chefTask);
+			((ThreadPoolTaskScheduler) workers).execute(chefTask);
 		}
 	}
 
-	private Producer buildProducer() {
+	protected void startConsumers(int amount) {
+		for (int i = 0; i < amount; i++) {
+
+			MessagingTask serverTask = new ServerTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					buildProducer(),
+					dishBackupProvider,
+					backupProviderPermit,
+					restaurantProperties.getConsumerIdle(),
+					jmsProperties.getPollTimeOut()
+			);
+
+			consumerTasks.add(serverTask);
+			((ThreadPoolTaskScheduler) workers).execute(serverTask);
+		}
+	}
+
+	private Producer<Dish> buildProducer() {
 		if (jmsProperties.getProducer().equalsIgnoreCase("NoopProducer")) {
 			return new NoopProducer();
 		}
 
-		JmsProducer producer = new MyJmsProducer(connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE), jmsProperties.getDestination());
-//		producer.getContext().setExceptionListener(myExceptionListener);
-		producer.getProducer().setAsync(myCompletionListener);
-		producer.getProducer().setDeliveryMode(DeliveryMode.PERSISTENT);
-		return producer;
+		return new MyJmsProducer(connectionFactory, jmsProperties);
 	}
 
 	@Override

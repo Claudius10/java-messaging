@@ -1,18 +1,19 @@
 package com.example.messaging.kafka.restaurant;
 
+import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.manager.BaseMessagingManager;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
-import com.example.messaging.common.producer.backup.BackupProducer;
 import com.example.messaging.common.producer.impl.NoopProducer;
 import com.example.messaging.common.task.MessagingTask;
 import com.example.messaging.common.task.restaurant.ChefTask;
 import com.example.messaging.common.task.restaurant.ServerTask;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
+import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.producer.impl.MyKafkaProducer;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,9 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 
 	private final KafkaTemplate<Long, String> kafkaTemplate;
 
-	private final BackupProducer myKafkaBackupProducer;
+	private final MyKafkaAdmin myKafkaAdmin;
+
+	private final BackupProvider<Dish> dishBackupProvider;
 
 	private BlockingQueue<Dish> dishesQueue;
 
@@ -58,24 +61,6 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 
 	protected void startProducers(int amount) {
 		for (int i = 0; i < amount; i++) {
-
-			MessagingTask serverTask = new ServerTask(
-					startGate,
-					endGate,
-					dishesQueue,
-					buildProducer(),
-					myKafkaBackupProducer,
-					restaurantProperties.getConsumerIdle(),
-					kafkaProperties.getPollTimeOut()
-			);
-
-			consumerTasks.add(serverTask);
-			workers.execute(serverTask);
-		}
-	}
-
-	protected void startConsumers(int amount) {
-		for (int i = 0; i < amount; i++) {
 			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
 
 			MessagingTask chefTask = new ChefTask(
@@ -91,12 +76,31 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 		}
 	}
 
-	private Producer buildProducer() {
+	protected void startConsumers(int amount) {
+		for (int i = 0; i < amount; i++) {
+
+			MessagingTask serverTask = new ServerTask(
+					startGate,
+					endGate,
+					dishesQueue,
+					buildProducer(),
+					dishBackupProvider,
+					backupProviderPermit,
+					restaurantProperties.getConsumerIdle(),
+					kafkaProperties.getPollTimeOut()
+			);
+
+			consumerTasks.add(serverTask);
+			workers.execute(serverTask);
+		}
+	}
+
+	private Producer<Dish> buildProducer() {
 		if (kafkaProperties.getProducer().equalsIgnoreCase("NoopProducer")) {
 			return new NoopProducer();
 		}
 
-		return new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate);
+		return new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
 	}
 
 	@Override
