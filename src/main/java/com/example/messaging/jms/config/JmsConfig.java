@@ -23,7 +23,8 @@ public class JmsConfig {
 	ConnectionFactory connectionFactory() {
 		JmsPoolConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
 		connectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
-		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections() * 2); // used for the ListenerContainerFactory (Consumers) and for creating JMSContext (Producers)
+		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections() * 2 + 1); // used for the ListenerContainerFactory (Consumers) and for creating JMSContext (Producers), and 1 for the
+		// schedules backup process
 		return connectionFactory;
 	}
 

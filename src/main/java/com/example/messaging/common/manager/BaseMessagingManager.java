@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -22,8 +21,6 @@ public abstract class BaseMessagingManager {
 	protected final CountDownLatch startGate = new CountDownLatch(1);
 
 	protected CountDownLatch endGate;
-
-	protected final Semaphore backupProviderPermit = new Semaphore(1);
 
 	protected void setup(int pairs) {
 		producerTasks = new ArrayList<>(pairs);
@@ -81,8 +78,20 @@ public abstract class BaseMessagingManager {
 	}
 
 	protected void printStats() {
+		for (int i = 0; i < producerTasks.size(); i++) {
+			MessagingTask task = producerTasks.get(i);
+			log.info("PRODUCER {} IN {}", i, task.getInCount());
+			log.info("PRODUCER {} OUT {}", i, task.getOutCount());
+		}
+
+		for (int i = 0; i < consumerTasks.size(); i++) {
+			MessagingTask task = consumerTasks.get(i);
+			log.info("CONSUMER {} IN {}", i, task.getInCount());
+			log.info("CONSUMER {} OUT {}", i, task.getOutCount());
+		}
+
 		getStats().forEach((stat, count) -> {
-			log.info("{} - {}", stat, count);
+			log.info("TOTAL {} - {}", stat, count);
 		});
 	}
 }

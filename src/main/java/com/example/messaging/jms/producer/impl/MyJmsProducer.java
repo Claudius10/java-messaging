@@ -52,19 +52,17 @@ public class MyJmsProducer implements Producer<Dish> {
 	}
 
 	private void checkClosed() {
-		if (closed) {
-			try {
-				connect();
-			} catch (JMSRuntimeException ex) {
-				log.warn("Failed to connect to JMS broker: {}", ex.getMessage());
-				throw new ProducerClosedException();
-			}
+		try {
+			connect();
+		} catch (JMSRuntimeException ex) {
+			log.warn("Failed to connect to JMS broker: {}", ex.getMessage());
+			throw new ProducerClosedException();
 		}
 	}
 
 	private void connect() {
 		if (closed) {
-			if (log.isTraceEnabled()) log.trace("Attempting to communicate with JMS broker");
+			if (log.isTraceEnabled()) log.trace("Attempting to establish connection with JMS broker...");
 			jmsContext = connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
 			jmsProducer = jmsContext.createProducer();
 			jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
@@ -91,8 +89,9 @@ public class MyJmsProducer implements Producer<Dish> {
 
 	@Override
 	public boolean isConnected() {
+		checkClosed();
+
 		try {
-			// TODO - test
 			jmsProducer.send(TEST_DESTINATION, "TEST_REQUEST");
 			return true;
 		} catch (Exception ex) {

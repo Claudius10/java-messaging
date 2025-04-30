@@ -19,8 +19,7 @@ import jakarta.jms.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -33,7 +32,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class MyJmsRestaurant extends BaseMessagingManager implements MessagingManager {
 
-	private final TaskScheduler workers;
+	private final TaskExecutor workers;
 
 	private final RestaurantProperties restaurantProperties;
 
@@ -70,7 +69,7 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 			);
 
 			producerTasks.add(chefTask);
-			((ThreadPoolTaskScheduler) workers).execute(chefTask);
+			workers.execute(chefTask);
 		}
 	}
 
@@ -83,13 +82,12 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 					dishesQueue,
 					buildProducer(),
 					dishBackupProvider,
-					backupProviderPermit,
 					restaurantProperties.getConsumerIdle(),
 					jmsProperties.getPollTimeOut()
 			);
 
 			consumerTasks.add(serverTask);
-			((ThreadPoolTaskScheduler) workers).execute(serverTask);
+			workers.execute(serverTask);
 		}
 	}
 

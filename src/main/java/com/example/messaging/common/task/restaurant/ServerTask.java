@@ -1,7 +1,6 @@
 package com.example.messaging.common.task.restaurant;
 
 import com.example.messaging.common.backup.BackupProvider;
-import com.example.messaging.common.exception.BackupProcessException;
 import com.example.messaging.common.exception.producer.ProducerDeliveryException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
@@ -11,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -27,8 +25,6 @@ public class ServerTask implements MessagingTask {
 	private final Producer<Dish> producer;
 
 	private final BackupProvider<Dish> backupProvider;
-
-	private final Semaphore backupPermit;
 
 	private final int consumerIdle;
 
@@ -47,15 +43,15 @@ public class ServerTask implements MessagingTask {
 	@Override
 	public void run() {
 		startWork();
-		if (log.isTraceEnabled()) log.trace("Server shift ended");
+		log.info("Server shift ended");
 	}
 
 	private void startWork() {
 		try {
 
-			if (log.isTraceEnabled()) log.trace("Waiting on coworkers...");
+			log.info("Waiting on coworkers...");
 			startGate.await();
-			if (log.isTraceEnabled()) log.trace("All coworkers ready, starting work!");
+			log.info("All coworkers ready, starting work!");
 			isWorking = true;
 
 			while (!Thread.currentThread().isInterrupted()) {
@@ -95,26 +91,15 @@ public class ServerTask implements MessagingTask {
 	}
 
 	private void handleIdle() throws InterruptedException {
-		if ((System.currentTimeMillis() - timeOfLastDish) > TimeUnit.SECONDS.toMillis(consumerIdle)) {
-			boolean acquired = backupPermit.tryAcquire(1, TimeUnit.SECONDS);
-			if (!acquired) return;
-			if (log.isTraceEnabled()) log.trace("Processing backup...");
-			processBackedUpMessages();
-			backupPermit.release();
+		if ((System.currentTimeMillis() - timeOfLastDish) > consumerIdle) {
+			pause();
 		}
 	}
 
-	private void processBackedUpMessages() {
-		try {
-			backupProvider.open();
-			if (backupProvider.hasMoreElements() && producer.isConnected()) {
-				while (backupProvider.hasMoreElements()) {
-					producer.sendTextMessage(backupProvider.read());
-				}
-			}
-			backupProvider.close();
-		} catch (BackupProcessException ex) {
-			log.warn("Failed to resend backup: {}", ex.getMessage());
+	private void pause() throws InterruptedException {
+		if (log.isTraceEnabled()) log.trace("Waiting for work...");
+		synchronized (completedDishes) {
+			completedDishes.wait();
 		}
 	}
 

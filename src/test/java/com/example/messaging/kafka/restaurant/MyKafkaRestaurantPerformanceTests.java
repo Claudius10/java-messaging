@@ -3,7 +3,7 @@ package com.example.messaging.kafka.restaurant;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupProvider;
-import com.example.messaging.common.backup.impl.NoopBackupProvider;
+import com.example.messaging.common.backup.impl.MockBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.util.MessagingStat;
@@ -21,14 +21,16 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @Slf4j
@@ -50,37 +52,39 @@ public class MyKafkaRestaurantPerformanceTests {
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
 		int trials = 10;
-		int maxTestDurationMs = 10000;
-		int dishesToProduce = 1000000;
+		int maxTestDurationMs = 10000; // ms
+		int dishesToProduce = 10000; // affects performance
+		int producerIdle = 0; // ms
+		int consumerIdle = 1000; // ms
 
-		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce);
+		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 
-		log.info("Average items sent under ten seconds over {} trials: {}", trials, results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0));
+		log.info("Average items sent under ten seconds over {} trials: {}", trials, new BigDecimal(results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0)).toPlainString());
 	}
 
-	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce) throws InterruptedException {
+	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
 		// dishes to produce = 1.000.000
 		// how many dishes can be served in 10 seconds?
 
-		ThreadPoolTaskScheduler workers = workers(threadPairs);
+		TaskExecutor workers = workers(threadPairs);
 
 		for (int i = 0; i < trials; i++) {
 			kafka.start();
 			createTopic(kafka.getBootstrapServers(), "table-A");
-			restaurantTest(workers, maxTestDuration, threadPairs, queueCapacity, dishesToProduce);
+			restaurantTest(workers, maxTestDuration, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 			kafka.stop();
 		}
 	}
 
-	void restaurantTest(ThreadPoolTaskScheduler workers, int duration, int pairs, int queueCapacity, int dishesToProduce) throws InterruptedException {
+	void restaurantTest(TaskExecutor workers, int duration, int pairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
 
 		// Arrange
 
 		RestaurantProperties restaurantProperties = new RestaurantProperties();
 		restaurantProperties.setDishesToProduce(dishesToProduce);
 		restaurantProperties.setDishesQueueCapacity(queueCapacity);
-		restaurantProperties.setConsumerIdle(999999999);
-		restaurantProperties.setProducerIdle(999999999);
+		restaurantProperties.setProducerIdle(producerIdle);
+		restaurantProperties.setConsumerIdle(consumerIdle);
 
 		KafkaProperties kafkaProperties = new KafkaProperties();
 		kafkaProperties.setBrokerUrl(kafka.getBootstrapServers());
@@ -104,7 +108,7 @@ public class MyKafkaRestaurantPerformanceTests {
 		KafkaTemplate<Long, String> kafkaTemplate = new KafkaTemplate<>(producerFactory);
 		KafkaAdmin kafkaAdmin = kafkaTemplate.getKafkaAdmin();
 		MyKafkaAdmin myKafkaAdmin = new MyKafkaAdmin(kafkaAdmin);
-		BackupProvider<Dish> backupProvider = new NoopBackupProvider();
+		BackupProvider<Dish> backupProvider = new MockBackupProvider();
 
 		MessagingManager myJmsRestaurant = new MyKafkaRestaurant(
 				workers,
@@ -152,14 +156,14 @@ public class MyKafkaRestaurantPerformanceTests {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(props);
-		producerFactory.setProducerPerThread(false);
+		producerFactory.setProducerPerThread(true);
 		return producerFactory;
 	}
 
-	private ThreadPoolTaskScheduler workers(int pairs) {
-		ThreadPoolTaskScheduler taskExecutor = new ThreadPoolTaskScheduler();
+	TaskExecutor workers(int pairs) {
+		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setPoolSize(pairs * 2);
+		taskExecutor.setCorePoolSize(pairs * 2); // producers + consumers
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		taskExecutor.initialize();
 		return taskExecutor;
@@ -169,7 +173,8 @@ public class MyKafkaRestaurantPerformanceTests {
 /*
  --- RESULTS ---
 
- a) each thread with its own KafkaTemplate: 363319 (avg 10 trials)
- b) all threads using the same KafkaTemplate: 361412 (avg 10 trials) / 381113 (avg 10 trials)
+ 6 threads (3 producers - 3 consumers)
+
+ 1)  16.709.088 in 10 seconds (avg 10 trials)
 
  */

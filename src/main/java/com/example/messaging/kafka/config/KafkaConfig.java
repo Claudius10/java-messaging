@@ -66,7 +66,7 @@ public class KafkaConfig {
 	@Bean
 	public ProducerFactory<Long, String> producerFactory() {
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs());
-//		producerFactory.setProducerPerThread(true); // does not affect performance
+		producerFactory.setProducerPerThread(true); // does not affect performance, but it does affect safety
 		return producerFactory;
 	}
 

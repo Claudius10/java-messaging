@@ -1,14 +1,13 @@
 package com.example.messaging.common.task.restaurant;
 
 import com.example.messaging.common.customer.RestaurantCustomer;
-import com.example.messaging.common.exception.CustomerGreetException;
+import com.example.messaging.common.exception.customer.CustomerGreetException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.task.MessagingTask;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ChefTask implements MessagingTask {
@@ -44,21 +43,20 @@ public class ChefTask implements MessagingTask {
 	@Override
 	public void run() {
 		startWork();
-		if (log.isTraceEnabled()) log.trace("Chef shift ended");
+		log.info("Chef shift ended");
 	}
 
 	private void startWork() {
 		try {
 
-			if (log.isTraceEnabled()) log.trace("Waiting on coworkers...");
+			log.info("Waiting on coworkers...");
 			startGate.await();
-			if (log.isTraceEnabled()) log.trace("All coworkers ready, starting work!");
+			log.info("All coworkers ready, starting work!");
 
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel) {
-					isWorking = false;
-					endGate.countDown();
+					stopWork();
 					break;
 				}
 
@@ -92,7 +90,7 @@ public class ChefTask implements MessagingTask {
 	}
 
 	private void handleIdle() {
-		if ((System.currentTimeMillis() - timeOfLastDish) > TimeUnit.SECONDS.toMillis(producerIdle)) {
+		if ((System.currentTimeMillis() - timeOfLastDish) > producerIdle) {
 			greetCustomer();
 		}
 	}
@@ -102,10 +100,23 @@ public class ChefTask implements MessagingTask {
 		try {
 			customer.greet();
 			isWorking = true;
+			notifyConsumers();
 		} catch (CustomerGreetException ex) {
 			isWorking = false;
 			if (log.isTraceEnabled()) log.trace("Customer response: '{}'", ex.getMessage());
 		}
+	}
+
+	private void notifyConsumers() {
+		synchronized (completedDishes) {
+			completedDishes.notifyAll();
+		}
+	}
+
+	private void stopWork() {
+		isWorking = false;
+		notifyConsumers();
+		endGate.countDown();
 	}
 
 	@Override

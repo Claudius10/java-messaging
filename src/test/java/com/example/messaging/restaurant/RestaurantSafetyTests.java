@@ -1,14 +1,16 @@
-package com.example.messaging.jms.restaurant;
+package com.example.messaging.restaurant;
 
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
+import com.example.messaging.jms.restaurant.MyJmsRestaurant;
 import jakarta.jms.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Map;
 
@@ -16,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 @Slf4j
-public class MyJmsRestaurantSafetyTests {
+public class RestaurantSafetyTests {
 
 	@Test
 	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException {
@@ -31,7 +33,7 @@ public class MyJmsRestaurantSafetyTests {
 	}
 
 	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException {
-		ThreadPoolTaskScheduler workers = workers(pairs);
+		TaskExecutor workers = workers(pairs);
 
 		for (int i = 0; i < trials; i++) {
 			restaurantTest(workers, capacity, pairs, duration, amount);
@@ -39,7 +41,7 @@ public class MyJmsRestaurantSafetyTests {
 		}
 	}
 
-	void restaurantTest(ThreadPoolTaskScheduler workers, int capacity, int pairs, int duration, int amount) throws InterruptedException {
+	void restaurantTest(TaskExecutor workers, int capacity, int pairs, int duration, int amount) throws InterruptedException {
 		// Arrange
 
 		RestaurantProperties restaurantProperties = new RestaurantProperties();
@@ -85,10 +87,10 @@ public class MyJmsRestaurantSafetyTests {
 		assertThat(stats.get(MessagingStat.CONSUMER_OUT)).isEqualTo(expectedDishesToProduce);
 	}
 
-	private ThreadPoolTaskScheduler workers(int pairs) {
-		ThreadPoolTaskScheduler taskExecutor = new ThreadPoolTaskScheduler();
+	TaskExecutor workers(int pairs) {
+		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setPoolSize(pairs * 2);
+		taskExecutor.setCorePoolSize(pairs * 2); // producers + consumers
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		taskExecutor.initialize();
 		return taskExecutor;

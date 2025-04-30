@@ -11,4 +11,6 @@ public interface BackupProvider<T> {
 	void write(T object);
 
 	T read();
+
+	void onFailure(T object);
 }

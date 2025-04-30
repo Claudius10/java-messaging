@@ -30,4 +30,6 @@ public class JmsProperties {
 	private int pollTimeOut;
 
 	private int reconnectionIntervalMs;
+
+	private int backupCheckInterval;
 }

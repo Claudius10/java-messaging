@@ -19,8 +19,8 @@ import com.example.messaging.kafka.producer.impl.MyKafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -33,7 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class MyKafkaRestaurant extends BaseMessagingManager implements MessagingManager {
 
-	private final ThreadPoolTaskScheduler workers;
+	private final TaskExecutor workers;
 
 	private final RestaurantProperties restaurantProperties;
 
@@ -85,7 +85,6 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 					dishesQueue,
 					buildProducer(),
 					dishBackupProvider,
-					backupProviderPermit,
 					restaurantProperties.getConsumerIdle(),
 					kafkaProperties.getPollTimeOut()
 			);

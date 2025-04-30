@@ -1,7 +1,7 @@
 package com.example.messaging.common.customer.impl;
 
 import com.example.messaging.common.customer.RestaurantCustomer;
-import com.example.messaging.common.exception.CustomerGreetException;
+import com.example.messaging.common.exception.customer.CustomerGreetException;
 import com.example.messaging.common.model.Dish;
 import lombok.extern.slf4j.Slf4j;
 
