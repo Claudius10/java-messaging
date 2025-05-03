@@ -41,6 +41,7 @@ public class ChefTaskTests {
 		Thread.sleep(waitMilis); // wait for chef to cook the dish (even though highly unlikely to fail, if it does, increase waitMilis)
 		assertThat(chefTask.getInCount()).isEqualTo(dishesToProduce);
 		assertThat(chefTask.getOutCount()).isEqualTo(dishesToProduce);
+		chefThread.interrupt();
 	}
 
 	@Test
@@ -70,7 +71,7 @@ public class ChefTaskTests {
 		Thread.sleep(waitMilis);
 		assertThat(chefTask.getInCount()).isEqualTo(dishesToProduce);
 		assertThat(chefTask.getOutCount()).isEqualTo(dishesToProduce);
-
+		chefThread.interrupt();
 		// to refute/falsify this test, set waitMilis higher than greetTimeOutSeconds
 	}
 }

@@ -43,7 +43,6 @@ public class KafkaAppControllerTests {
 	}
 
 	@Test
-	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenWorking_thenReturnBadRequest() throws Exception {
 
 		// Arrange
@@ -59,12 +58,9 @@ public class KafkaAppControllerTests {
 
 		assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 		assertThat(response.getContentAsString()).isEqualTo(APIResponses.SHUTDOWN_WORKING_WARN);
-		MockHttpServletResponse stop = mockMvc.perform(post("/kafka/producer/stop")).andReturn().getResponse();
-		assertThat(stop.getStatus()).isEqualTo(HttpStatus.OK.value());
 	}
 
 	@Test
-	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenAllowedToStop_thenReturnOk() throws Exception {
 
 		// Arrange

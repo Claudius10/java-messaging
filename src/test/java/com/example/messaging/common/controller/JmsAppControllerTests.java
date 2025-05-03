@@ -43,7 +43,6 @@ public class JmsAppControllerTests {
 	}
 
 	@Test
-	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenWorking_thenReturnBadRequest() throws Exception {
 
 		// Arrange
@@ -64,7 +63,6 @@ public class JmsAppControllerTests {
 	}
 
 	@Test
-	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenAllowedToStop_thenReturnOk() throws Exception {
 
 		// Arrange
