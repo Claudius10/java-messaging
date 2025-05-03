@@ -46,19 +46,16 @@ public class MyKafkaProducer implements Producer<Dish> {
 	public void close() {
 		if (log.isTraceEnabled()) log.trace("Closing Kafka Producer...");
 
+		logMetrics();
+
 		if (pending == null) {
-			shutdown();
+			kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
 			return;
 		}
 
 		pending.whenComplete((result, ex) -> {
-			shutdown();
+			kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
 		});
-	}
-
-	private void shutdown() {
-		kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
-		logMetrics();
 	}
 
 	private void logMetrics() {

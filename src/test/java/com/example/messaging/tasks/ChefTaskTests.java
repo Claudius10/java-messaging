@@ -23,11 +23,11 @@ public class ChefTaskTests {
 		final CountDownLatch end = new CountDownLatch(1);
 		BlockingQueue<Dish> dishes = new LinkedBlockingQueue<>();
 		int dishesToProduce = 1;
-		int greetTimeOutSeconds = 2;
+		int greetTimeOutMs = 2000;
 		int customerId = 1;
 
 		RestaurantCustomer customer = new MyRestaurantCustomer(dishesToProduce, customerId);
-		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutSeconds);
+		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutMs);
 		Thread chefThread = new Thread(chefTask);
 
 		// Acts
@@ -52,11 +52,11 @@ public class ChefTaskTests {
 		final CountDownLatch end = new CountDownLatch(1);
 		BlockingQueue<Dish> dishes = new LinkedBlockingQueue<>();
 		int dishesToProduce = 1;
-		int greetTimeOutSeconds = 60;
+		int greetTimeOutMs = 6000;
 		int customerId = 1;
 
 		RestaurantCustomer customer = new MyRestaurantCustomer(dishesToProduce, customerId);
-		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutSeconds);
+		ChefTask chefTask = new ChefTask(countDownLatch, end, dishes, customer, greetTimeOutMs);
 		Thread chefThread = new Thread(chefTask);
 
 		// Act
