@@ -4,11 +4,13 @@ import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.exception.customer.CustomerGreetException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.task.MessagingTask;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+@RequiredArgsConstructor
 @Slf4j
 public class ChefTask implements MessagingTask {
 
@@ -31,14 +33,6 @@ public class ChefTask implements MessagingTask {
 	private long in = 0;
 
 	private long out = 0;
-
-	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, RestaurantCustomer customer, int producerIdle) {
-		this.startGate = startGate;
-		this.endGate = endGate;
-		this.completedDishes = completedDishes;
-		this.customer = customer;
-		this.producerIdle = producerIdle;
-	}
 
 	@Override
 	public void run() {

@@ -28,11 +28,11 @@ public class MyJmsProducer implements Producer<Dish> {
 
 	private Destination destination;
 
-	private boolean closed = true;
+	private boolean open = false;
 
 	@Override
 	public void sendTextMessage(Dish dish) throws ProducerDeliveryException {
-		checkClosed();
+		checkOpen();
 
 		Long id = dish.getId();
 		String content = dish.getName();
@@ -44,40 +44,38 @@ public class MyJmsProducer implements Producer<Dish> {
 			if (log.isTraceEnabled()) log.trace("Sent message {} to destination {}", id, destination);
 		} catch (JMSRuntimeException ex) {
 			log.warn("Failed to send message {} to destination {}: {}", content, destination, ex.getMessage());
-			closed = true;
+			close();
 			throw new ProducerSendException();
 		} catch (JMSException ex) {
 			log.error("Failed to add property to message {} with id {}", content, id, ex);
 		}
 	}
 
-	private void checkClosed() {
+	private void checkOpen() {
 		try {
 			connect();
 		} catch (JMSRuntimeException ex) {
 			log.warn("Failed to connect to JMS broker: {}", ex.getMessage());
-			this.jmsContext = null;
-			this.jmsProducer = null;
 			throw new ProducerClosedException();
 		}
 	}
 
 	private void connect() {
-		if (closed) {
+		if (!open) {
 			if (log.isTraceEnabled()) log.trace("Attempting to establish connection with JMS broker...");
 			jmsContext = connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
 			jmsProducer = jmsContext.createProducer();
 			jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
 			jmsProducer.setAsync(new MyCompletionListener());
 			destination = jmsProperties.getDestination().contains("queue") ? jmsContext.createQueue(jmsProperties.getDestination()) : jmsContext.createTopic(jmsProperties.getDestination());
-			closed = false;
+			open = true;
 			if (log.isTraceEnabled()) log.trace("Connected to JMS broker!");
 		}
 	}
 
 	@Override
 	public void close() {
-		if (!closed) {
+		if (open) {
 			try {
 				if (log.isTraceEnabled()) log.trace("Closing JMS producer...");
 				jmsContext.close();
@@ -87,18 +85,18 @@ public class MyJmsProducer implements Producer<Dish> {
 				this.jmsContext = null;
 				this.jmsProducer = null;
 			}
-			closed = true;
+			open = false;
 		}
 	}
 
 	@Override
 	public boolean isConnected() {
 		try {
-			checkClosed();
+			checkOpen();
 			jmsProducer.send(TEST_DESTINATION, "TEST_REQUEST");
 			return true;
 		} catch (Exception ex) {
-			closed = true;
+			close();
 			return false;
 		}
 	}

@@ -71,22 +71,8 @@ public abstract class BaseMessagingManager {
 		return consumerTasks.stream().anyMatch(MessagingTask::isWorking);
 	}
 
-	private void generateStats() {
-		if ((producerTasks != null && !producerTasks.isEmpty()) && (consumerTasks != null && !consumerTasks.isEmpty())) {
-			long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
-			long consumerIn = consumerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
-			long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
-			long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
-
-			stats.put(MessagingStat.PRODUCER_IN, producerIn);
-			stats.put(MessagingStat.CONSUMER_IN, consumerIn);
-			stats.put(MessagingStat.PRODUCER_OUT, producerOut);
-			stats.put(MessagingStat.CONSUMER_OUT, consumerOut);
-		}
-	}
-
 	private void printStats() {
-		generateStats();
+		collectStats();
 
 		for (int i = 0; i < producerTasks.size(); i++) {
 			MessagingTask task = producerTasks.get(i);
@@ -106,7 +92,21 @@ public abstract class BaseMessagingManager {
 	}
 
 	protected Map<MessagingStat, Long> getStats() {
-		generateStats();
+		collectStats();
 		return stats;
+	}
+
+	private void collectStats() {
+		if ((producerTasks != null && !producerTasks.isEmpty()) && (consumerTasks != null && !consumerTasks.isEmpty())) {
+			long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
+			long consumerIn = consumerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
+			long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
+			long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
+
+			stats.put(MessagingStat.PRODUCER_IN, producerIn);
+			stats.put(MessagingStat.CONSUMER_IN, consumerIn);
+			stats.put(MessagingStat.PRODUCER_OUT, producerOut);
+			stats.put(MessagingStat.CONSUMER_OUT, consumerOut);
+		}
 	}
 }
