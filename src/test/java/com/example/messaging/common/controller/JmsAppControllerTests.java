@@ -58,8 +58,6 @@ public class JmsAppControllerTests {
 
 		assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 		assertThat(response.getContentAsString()).isEqualTo(APIResponses.SHUTDOWN_WORKING_WARN);
-		MockHttpServletResponse stop = mockMvc.perform(post("/jms/producer/stop")).andReturn().getResponse();
-		assertThat(stop.getStatus()).isEqualTo(HttpStatus.OK.value());
 	}
 
 	@Test
@@ -69,10 +67,11 @@ public class JmsAppControllerTests {
 
 		MockHttpServletResponse start = mockMvc.perform(post("/jms/producer/start")).andReturn().getResponse();
 		assertThat(start.getStatus()).isEqualTo(HttpStatus.OK.value());
-		MockHttpServletResponse stop = mockMvc.perform(post("/jms/producer/stop")).andReturn().getResponse();
-		assertThat(stop.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		// Act
+
+		MockHttpServletResponse stop = mockMvc.perform(post("/jms/producer/stop")).andReturn().getResponse();
+		assertThat(stop.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		MockHttpServletResponse response = mockMvc.perform(post("/stop")).andReturn().getResponse();
 
