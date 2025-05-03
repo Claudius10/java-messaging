@@ -43,7 +43,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsProducer.send(destination, message);
 			if (log.isTraceEnabled()) log.trace("Sent message {} to destination {}", id, destination);
 		} catch (JMSRuntimeException ex) {
-			log.warn("Failed to send message {} to destination {}", id, destination, ex);
+			log.warn("Failed to send message {} to destination {}", content, destination, ex);
 			closed = true;
 			throw new ProducerSendException();
 		} catch (JMSException ex) {
@@ -56,6 +56,8 @@ public class MyJmsProducer implements Producer<Dish> {
 			connect();
 		} catch (JMSRuntimeException ex) {
 			log.warn("Failed to connect to JMS broker: {}", ex.getMessage());
+			this.jmsContext = null;
+			this.jmsProducer = null;
 			throw new ProducerClosedException();
 		}
 	}
@@ -89,12 +91,12 @@ public class MyJmsProducer implements Producer<Dish> {
 
 	@Override
 	public boolean isConnected() {
-		checkClosed();
-
 		try {
+			checkClosed();
 			jmsProducer.send(TEST_DESTINATION, "TEST_REQUEST");
 			return true;
 		} catch (Exception ex) {
+			closed = true;
 			return false;
 		}
 	}

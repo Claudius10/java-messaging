@@ -1,6 +1,7 @@
 package com.example.messaging.common.manager;
 
 import com.example.messaging.common.task.MessagingTask;
+import com.example.messaging.common.task.Task;
 import com.example.messaging.common.util.MessagingStat;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,29 +36,29 @@ public abstract class BaseMessagingManager {
 		startGate.countDown();
 	}
 
-	protected void stop() throws InterruptedException {
-		log.info("Stopping workers...");
-
-		List<MessagingTask> allTasks = Stream.concat(producerTasks.stream(), consumerTasks.stream()).toList();
-
-		for (MessagingTask task : allTasks) {
-			task.cancel();
-		}
-
-		endGate.await();
-	}
-
 	protected abstract void startProducers(int amount);
 
 	protected abstract void startConsumers(int amount);
 
+	protected void stop() throws InterruptedException {
+		log.info("Stopping workers...");
+		Stream.concat(producerTasks.stream(), consumerTasks.stream()).forEach(Task::cancel);
+		endGate.await();
+	}
+
 	public boolean isProducing() {
-		if (producerTasks == null || producerTasks.isEmpty()) return false;
+		if (producerTasks == null || producerTasks.isEmpty()) {
+			return false;
+		}
+
 		return producerTasks.stream().anyMatch(MessagingTask::isWorking);
 	}
 
 	public boolean isConsuming() {
-		if (consumerTasks == null || consumerTasks.isEmpty()) return false;
+		if (consumerTasks == null || consumerTasks.isEmpty()) {
+			return false;
+		}
+
 		return consumerTasks.stream().anyMatch(MessagingTask::isWorking);
 	}
 

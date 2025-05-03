@@ -20,20 +20,24 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class MyKafkaProducer implements Producer<Dish> {
 
-	private final String topic;
+	private final String destination;
 
 	private final KafkaTemplate<Long, String> kafkaTemplate;
 
 	private final MyKafkaAdmin myKafkaAdmin;
 
-	private CompletableFuture<SendResult<Long, String>> sendFuture;
+	private CompletableFuture<SendResult<Long, String>> pending;
 
 	@Override
 	public void sendTextMessage(Dish dish) throws ProducerDeliveryException {
+
+		Long id = dish.getId();
+		String content = dish.getName();
+
 		try {
-			sendFuture = kafkaTemplate.send(topic, dish.getId(), dish.getName());
+			pending = kafkaTemplate.send(destination, id, content);
 		} catch (KafkaException ex) {
-			log.warn("Unable to send message: {}", ex.getMessage());
+			log.warn("Failed to send message {} to destination {}", content, destination, ex);
 			throw new ProducerSendException();
 		}
 	}
@@ -42,21 +46,19 @@ public class MyKafkaProducer implements Producer<Dish> {
 	public void close() {
 		if (log.isTraceEnabled()) log.trace("Closing Kafka Producer...");
 
-		logMetrics();
-
-		if (sendFuture == null) {
-			kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
+		if (pending == null) {
+			shutdown();
 			return;
 		}
 
-		sendFuture.whenComplete((result, ex) -> {
-			kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
+		pending.whenComplete((result, ex) -> {
+			shutdown();
 		});
 	}
 
-	@Override
-	public boolean isConnected() {
-		return myKafkaAdmin.clusterId() != null;
+	private void shutdown() {
+		kafkaTemplate.getProducerFactory().closeThreadBoundProducer();
+		logMetrics();
 	}
 
 	private void logMetrics() {
@@ -75,5 +77,10 @@ public class MyKafkaProducer implements Producer<Dish> {
 				log.info("Error -> {} - {} -> {}", entry.getKey().name(), entry.getKey().tags(), entry.getValue().metricValue());
 			}
 		}
+	}
+
+	@Override
+	public boolean isConnected() {
+		return myKafkaAdmin.clusterId() != null;
 	}
 }

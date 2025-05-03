@@ -22,15 +22,15 @@ public class ChefTask implements MessagingTask {
 
 	private final int producerIdle;
 
-	private long in = 0;
-
-	private long out = 0;
-
 	private boolean isWorking = false;
 
 	private boolean cancel = false;
 
 	private long timeOfLastDish = 0;
+
+	private long in = 0;
+
+	private long out = 0;
 
 	public ChefTask(CountDownLatch startGate, CountDownLatch endGate, BlockingQueue<Dish> completedDishes, RestaurantCustomer customer, int producerIdle) {
 		this.startGate = startGate;
@@ -75,7 +75,6 @@ public class ChefTask implements MessagingTask {
 					handleIdle();
 				}
 			}
-
 		} catch (InterruptedException ex) {
 			log.warn("Chef interrupted: {}", ex.getMessage());
 			isWorking = false;
@@ -85,7 +84,7 @@ public class ChefTask implements MessagingTask {
 
 	private void cook(Dish dish) throws InterruptedException {
 		dish.setCooked(true);
-		completedDishes.put(dish); // wait: can't have customers go hungry. also, if cancel becomes true, put last dish and end
+		completedDishes.put(dish);
 		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getId());
 	}
 

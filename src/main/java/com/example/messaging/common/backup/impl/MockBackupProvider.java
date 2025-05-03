@@ -23,11 +23,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public boolean hasMoreElements() {
-		if (count > 0) {
-			count--;
-			return true;
-		}
-		return false;
+		return count != 0;
 	}
 
 	@Override
@@ -37,6 +33,9 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public Dish read() {
+		if (count > 0) {
+			count--;
+		}
 		return Dish.builder().withId(count).withCooked(true).withName("Delicious dish " + count).build();
 	}
 

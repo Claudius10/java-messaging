@@ -30,15 +30,15 @@ public class ServerTask implements MessagingTask {
 
 	private final int pollTimeOut;
 
-	private long in = 0;
-
-	private long out = 0;
-
 	private boolean isWorking = false;
 
 	private boolean cancel = false;
 
 	private long timeOfLastDish = 0;
+
+	private long in = 0;
+
+	private long out = 0;
 
 	@Override
 	public void run() {

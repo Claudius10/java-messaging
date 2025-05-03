@@ -31,8 +31,7 @@ public class MyRestaurantCustomer implements RestaurantCustomer {
 
 		try {
 			if (!dishes.isEmpty()) {
-				dish = dishes.getFirst();
-				dishes.removeFirst();
+				dish = dishes.removeFirst();
 			}
 		} catch (NoSuchElementException ex) {
 			dishes = null;
@@ -52,8 +51,10 @@ public class MyRestaurantCustomer implements RestaurantCustomer {
 
 	private void generateDishes() {
 		if (new Random().nextBoolean()) {
-			if (log.isTraceEnabled()) log.trace("Customer ordered {} dishes!", amountOfDishesToGenerate);
 			dishes = new ArrayList<>();
+
+			if (log.isTraceEnabled()) log.trace("Customer ordered {} dishes!", amountOfDishesToGenerate);
+
 			for (long i = 0; i < amountOfDishesToGenerate; i++) {
 				Dish dish = Dish.builder().withId(i).withCooked(false).withName("Delicious dish " + id + ":" + i).build();
 				dishes.add(dish);

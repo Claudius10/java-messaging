@@ -1,5 +1,6 @@
 package com.example.messaging.kafka.config;
 
+import com.example.messaging.kafka.listener.MyProducerListener;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -15,7 +16,6 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.support.ProducerListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,16 +57,16 @@ public class KafkaConfig {
 	// Producer
 
 	@Bean
-	KafkaTemplate<Long, String> kafkaTemplate(ProducerFactory<Long, String> producerFactory, ProducerListener<Long, String> producerListener) {
+	KafkaTemplate<Long, String> kafkaTemplate(ProducerFactory<Long, String> producerFactory) {
 		KafkaTemplate<Long, String> template = new KafkaTemplate<>(producerFactory);
-		template.setProducerListener(producerListener);
+		template.setProducerListener(new MyProducerListener());
 		return template;
 	}
 
 	@Bean
 	public ProducerFactory<Long, String> producerFactory() {
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs());
-		producerFactory.setProducerPerThread(true); // does not affect performance, but it does affect safety
+		producerFactory.setProducerPerThread(true); // does not affect performance, but it does affect safety!!!
 		return producerFactory;
 	}
 

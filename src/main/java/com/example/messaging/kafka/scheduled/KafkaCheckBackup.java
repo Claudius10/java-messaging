@@ -5,6 +5,7 @@ import com.example.messaging.common.exception.backup.BackupProcessException;
 import com.example.messaging.common.exception.backup.BackupReadException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
+import com.example.messaging.common.scheduled.BackupCheck;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.producer.impl.MyKafkaProducer;
@@ -12,13 +13,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ScheduledFuture;
 
 @Profile("Kafka")
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class KafkaTasks {
+public class KafkaCheckBackup implements BackupCheck {
 
 	private final KafkaProperties kafkaProperties;
 
@@ -28,8 +34,16 @@ public class KafkaTasks {
 
 	private final BackupProvider<Dish> backupProvider;
 
-	public int getBackupCheckInterval() {
-		return kafkaProperties.getBackupCheckInterval();
+	private Producer<Dish> producer;
+
+	@Override
+	public ScheduledFuture<?> scheduleBackupCheck(TaskScheduler scheduler) {
+		int backupCheckInterval = kafkaProperties.getBackupCheckInterval();
+		return scheduler.scheduleAtFixedRate(
+				this::processBackedUpMessages,
+				Instant.now().plusSeconds(backupCheckInterval),
+				Duration.ofSeconds(backupCheckInterval)
+		);
 	}
 
 	public void processBackedUpMessages() {
@@ -41,22 +55,14 @@ public class KafkaTasks {
 			if (backupProvider.hasMoreElements()) {
 				if (log.isTraceEnabled()) log.trace("Found backed up messages");
 
-				Producer<Dish> producer = new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
+				producer = new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
 
 				if (producer.isConnected()) {
 
 					while (backupProvider.hasMoreElements()) {
-						Dish dish;
-						try {
-							dish = backupProvider.read();
-							try {
-								if (log.isTraceEnabled()) log.trace("Resending dish {}", dish.getName());
-								producer.sendTextMessage(dish);
-							} catch (Exception ex) {
-								backupProvider.onFailure(dish);
-							}
-						} catch (BackupReadException ex) {
-							log.error("Unable to read backed up message {}", ex.getMessage());
+						Dish dish = getDish();
+						if (dish != null) {
+							resend(dish);
 						}
 					}
 
@@ -72,6 +78,27 @@ public class KafkaTasks {
 			backupProvider.close();
 		} catch (BackupProcessException ex) {
 			log.error("Backup processing failed {}", ex.getMessage());
+		}
+	}
+
+	private Dish getDish() {
+		Dish dish = null;
+
+		try {
+			dish = backupProvider.read();
+		} catch (BackupReadException ex) {
+			log.error("Unable to read backed up message {}", ex.getMessage());
+		}
+
+		return dish;
+	}
+
+	private void resend(Dish dish) {
+		try {
+			if (log.isTraceEnabled()) log.trace("Resending dish {}", dish.getName());
+			producer.sendTextMessage(dish);
+		} catch (Exception ex) {
+			backupProvider.onFailure(dish);
 		}
 	}
 }
