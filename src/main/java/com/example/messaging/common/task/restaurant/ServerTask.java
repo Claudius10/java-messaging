@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -19,6 +20,8 @@ public class ServerTask implements MessagingTask {
 	private final CountDownLatch startGate;
 
 	private final CountDownLatch endGate;
+
+	private final Semaphore writePermit;
 
 	private final BlockingQueue<Dish> completedDishes;
 
@@ -52,7 +55,6 @@ public class ServerTask implements MessagingTask {
 			log.info("Waiting on coworkers...");
 			startGate.await();
 			log.info("All coworkers ready, starting work!");
-			isWorking = true;
 
 			while (!Thread.currentThread().isInterrupted()) {
 
@@ -66,6 +68,7 @@ public class ServerTask implements MessagingTask {
 				Dish dish = completedDishes.poll(pollTimeOut, TimeUnit.MILLISECONDS); // can't wait indefinetly: if cancel becomes true while waiting and chefs went home, it will get stuck
 
 				if (dish != null) {
+					isWorking = true;
 					timeOfLastDish = System.currentTimeMillis();
 					in++;
 					serve(dish);
@@ -81,25 +84,33 @@ public class ServerTask implements MessagingTask {
 		}
 	}
 
-	private void serve(Dish dish) {
+	private void serve(Dish dish) throws InterruptedException {
 		if (log.isTraceEnabled()) log.trace("Served {}", dish.getName());
 		try {
 			producer.sendTextMessage(dish);
 		} catch (ProducerDeliveryException ex) {
+			writePermit.acquire();
 			backupProvider.write(dish);
+			writePermit.release();
 		}
 	}
 
 	private void handleIdle() throws InterruptedException {
-		if ((System.currentTimeMillis() - timeOfLastDish) > consumerIdle) {
+		long elapsed = System.currentTimeMillis() - timeOfLastDish;
+		if (elapsed > consumerIdle) {
+			if (log.isTraceEnabled()) log.trace("Elapsed time: {} ms", elapsed);
+			if (log.isTraceEnabled()) log.trace("Consumer idle: {}", consumerIdle);
 			pause();
 		}
 	}
 
 	private void pause() throws InterruptedException {
-		if (log.isTraceEnabled()) log.trace("Waiting for work...");
 		synchronized (completedDishes) {
-			completedDishes.wait();
+			if (!cancel) {
+				isWorking = false;
+				if (log.isTraceEnabled()) log.trace("Waiting for work...");
+				completedDishes.wait();
+			}
 		}
 	}
 

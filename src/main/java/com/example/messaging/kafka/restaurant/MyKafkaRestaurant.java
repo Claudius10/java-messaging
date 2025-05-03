@@ -1,7 +1,6 @@
 package com.example.messaging.kafka.restaurant;
 
 import com.example.messaging.common.backup.BackupProvider;
-import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.manager.BaseMessagingManager;
 import com.example.messaging.common.manager.MessagingManager;
@@ -56,18 +55,17 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 
 	public void close() throws InterruptedException {
 		super.stop();
-		super.printStats();
 	}
 
 	protected void startProducers(int amount) {
-		for (int i = 0; i < amount; i++) {
-			RestaurantCustomer customer = new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i);
+		log.info("Starting {} producers", amount);
 
+		for (int i = 0; i < amount; i++) {
 			MessagingTask chefTask = new ChefTask(
 					startGate,
 					endGate,
 					dishesQueue,
-					customer,
+					new MyRestaurantCustomer(restaurantProperties.getDishesToProduce(), i),
 					restaurantProperties.getProducerIdle()
 			);
 
@@ -77,11 +75,13 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 	}
 
 	protected void startConsumers(int amount) {
-		for (int i = 0; i < amount; i++) {
+		log.info("Starting {} consumers", amount);
 
+		for (int i = 0; i < amount; i++) {
 			MessagingTask serverTask = new ServerTask(
 					startGate,
 					endGate,
+					writeSemaphore,
 					dishesQueue,
 					buildProducer(),
 					dishBackupProvider,

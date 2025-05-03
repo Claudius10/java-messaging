@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MockBackupProvider implements BackupProvider<Dish> {
 
-	private long count = 5;
+	private long count = 0;
 
 	@Override
 	public void open() {
@@ -28,19 +28,24 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public void write(Dish dish) {
+		checkOpen();
 		if (log.isTraceEnabled()) log.trace("Backing up dish {}", dish.getName());
+		count++;
 	}
 
 	@Override
 	public Dish read() {
-		if (count > 0) {
-			count--;
-		}
-		return Dish.builder().withId(count).withCooked(true).withName("Delicious dish " + count).build();
+		Dish dish = Dish.builder().withId(count).withCooked(true).withName("Delicious dish " + count).build();
+		count--;
+		return dish;
 	}
 
 	@Override
 	public void onFailure(Dish dish) {
 		if (log.isTraceEnabled()) log.trace("Failed to resend dish {}", dish.getName());
+	}
+
+	private void checkOpen() {
+		// noop
 	}
 }

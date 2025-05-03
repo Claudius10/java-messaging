@@ -85,11 +85,14 @@ public class ChefTask implements MessagingTask {
 	private void cook(Dish dish) throws InterruptedException {
 		dish.setCooked(true);
 		completedDishes.put(dish);
-		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getId());
+		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getName());
 	}
 
 	private void handleIdle() {
-		if ((System.currentTimeMillis() - timeOfLastDish) > producerIdle) {
+		long elapsed = System.currentTimeMillis() - timeOfLastDish;
+		if (elapsed > producerIdle) {
+			if (log.isTraceEnabled()) log.trace("Elapsed time: {} ms", elapsed);
+			if (log.isTraceEnabled()) log.trace("Producer idle: {}", producerIdle);
 			greetCustomer();
 		}
 	}
@@ -109,12 +112,13 @@ public class ChefTask implements MessagingTask {
 	private void notifyConsumers() {
 		synchronized (completedDishes) {
 			completedDishes.notifyAll();
+			if (log.isTraceEnabled()) log.trace("Notified servers");
 		}
 	}
 
 	private void stopWork() {
-		isWorking = false;
 		notifyConsumers();
+		isWorking = false;
 		endGate.countDown();
 	}
 

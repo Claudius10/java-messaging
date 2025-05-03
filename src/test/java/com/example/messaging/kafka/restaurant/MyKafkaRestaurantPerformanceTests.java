@@ -18,7 +18,8 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
@@ -36,13 +37,19 @@ import java.util.*;
 @Slf4j
 public class MyKafkaRestaurantPerformanceTests {
 
-	private final static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:4.0.0"));
+	private final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:4.0.0"));
 
 	private final List<Long> results = new ArrayList<>();
 
-	@BeforeEach
-	public void setUp() {
-		final Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+	@BeforeAll
+	public static void setUp() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+		logger.setLevel(Level.INFO);
+	}
+
+	@AfterAll
+	public static void tearDown() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
 		logger.setLevel(Level.INFO);
 	}
 
@@ -51,7 +58,7 @@ public class MyKafkaRestaurantPerformanceTests {
 
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
-		int trials = 10;
+		int trials = 1;
 		int maxTestDurationMs = 10000; // ms
 		int dishesToProduce = 10000; // affects performance
 		int producerIdle = 0; // ms
@@ -63,10 +70,12 @@ public class MyKafkaRestaurantPerformanceTests {
 	}
 
 	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
-		// dishes to produce = 1.000.000
-		// how many dishes can be served in 10 seconds?
 
-		TaskExecutor workers = workers(threadPairs);
+		ThreadPoolTaskExecutor workers = new ThreadPoolTaskExecutor();
+		workers.setThreadNamePrefix("worker-");
+		workers.setCorePoolSize(threadPairs * 2); // producers + consumers
+		workers.setWaitForTasksToCompleteOnShutdown(true);
+		workers.initialize();
 
 		for (int i = 0; i < trials; i++) {
 			kafka.start();
@@ -74,6 +83,8 @@ public class MyKafkaRestaurantPerformanceTests {
 			restaurantTest(workers, maxTestDuration, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 			kafka.stop();
 		}
+
+		workers.destroy();
 	}
 
 	void restaurantTest(TaskExecutor workers, int duration, int pairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
@@ -158,15 +169,6 @@ public class MyKafkaRestaurantPerformanceTests {
 		DefaultKafkaProducerFactory<Long, String> producerFactory = new DefaultKafkaProducerFactory<>(props);
 		producerFactory.setProducerPerThread(true);
 		return producerFactory;
-	}
-
-	TaskExecutor workers(int pairs) {
-		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setCorePoolSize(pairs * 2); // producers + consumers
-		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
-		taskExecutor.initialize();
-		return taskExecutor;
 	}
 }
 

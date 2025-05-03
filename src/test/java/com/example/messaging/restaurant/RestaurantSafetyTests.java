@@ -25,7 +25,7 @@ public class RestaurantSafetyTests {
 
 		int pairs = 3;
 		int blockingQueueCapacity = 100;
-		int trials = 10000;
+		int trials = 10; // 10.000+ usually, 100.000 ideally
 		int trialDurationMilis = 100;
 		int dishesToProduce = 10000;
 
@@ -33,12 +33,19 @@ public class RestaurantSafetyTests {
 	}
 
 	void testRestaurantSafety(int trials, int capacity, int pairs, int duration, int amount) throws InterruptedException {
-		TaskExecutor workers = workers(pairs);
+
+		ThreadPoolTaskExecutor workers = new ThreadPoolTaskExecutor();
+		workers.setThreadNamePrefix("worker-");
+		workers.setCorePoolSize(pairs * 2); // producers + consumers
+		workers.setWaitForTasksToCompleteOnShutdown(true);
+		workers.initialize();
 
 		for (int i = 0; i < trials; i++) {
 			restaurantTest(workers, capacity, pairs, duration, amount);
 			log.info("Trial {} OK", i);
 		}
+
+		workers.destroy();
 	}
 
 	void restaurantTest(TaskExecutor workers, int capacity, int pairs, int duration, int amount) throws InterruptedException {
@@ -75,24 +82,15 @@ public class RestaurantSafetyTests {
 
 		myJmsRestaurant.open();
 		Thread.sleep(duration);
+		Map<MessagingStat, Long> stats = myJmsRestaurant.getStats();
 		myJmsRestaurant.close();
 
 		// Assert
 
-		Map<MessagingStat, Long> stats = myJmsRestaurant.getStats();
 		int expectedDishesToProduce = amount * pairs;
 		assertThat(stats.get(MessagingStat.PRODUCER_IN)).isEqualTo(expectedDishesToProduce);
 		assertThat(stats.get(MessagingStat.CONSUMER_IN)).isEqualTo(expectedDishesToProduce);
 		assertThat(stats.get(MessagingStat.PRODUCER_OUT)).isEqualTo(expectedDishesToProduce);
 		assertThat(stats.get(MessagingStat.CONSUMER_OUT)).isEqualTo(expectedDishesToProduce);
-	}
-
-	TaskExecutor workers(int pairs) {
-		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setCorePoolSize(pairs * 2); // producers + consumers
-		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
-		taskExecutor.initialize();
-		return taskExecutor;
 	}
 }

@@ -40,6 +40,4 @@ public class KafkaProperties {
 	private int maxConnections;
 
 	private int pollTimeOut;
-
-	private int backupCheckInterval;
 }

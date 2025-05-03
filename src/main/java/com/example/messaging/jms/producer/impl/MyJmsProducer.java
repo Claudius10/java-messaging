@@ -43,7 +43,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsProducer.send(destination, message);
 			if (log.isTraceEnabled()) log.trace("Sent message {} to destination {}", id, destination);
 		} catch (JMSRuntimeException ex) {
-			log.warn("Failed to send message {} to destination {}", content, destination, ex);
+			log.warn("Failed to send message {} to destination {}: {}", content, destination, ex.getMessage());
 			closed = true;
 			throw new ProducerSendException();
 		} catch (JMSException ex) {
@@ -71,6 +71,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsProducer.setAsync(new MyCompletionListener());
 			destination = jmsProperties.getDestination().contains("queue") ? jmsContext.createQueue(jmsProperties.getDestination()) : jmsContext.createTopic(jmsProperties.getDestination());
 			closed = false;
+			if (log.isTraceEnabled()) log.trace("Connected to JMS broker!");
 		}
 	}
 
@@ -78,8 +79,9 @@ public class MyJmsProducer implements Producer<Dish> {
 	public void close() {
 		if (!closed) {
 			try {
+				if (log.isTraceEnabled()) log.trace("Closing JMS producer...");
 				jmsContext.close();
-				if (log.isTraceEnabled()) log.trace("Producer disconnected");
+				if (log.isTraceEnabled()) log.trace("JMS producer disconnected");
 			} catch (JMSRuntimeException ex) {
 				log.warn("Failed to gracefully close JMS broker: {}", ex.getMessage());
 				this.jmsContext = null;

@@ -10,22 +10,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
 @Slf4j
 public abstract class BaseMessagingManager {
 
+	protected final Map<MessagingStat, Long> stats = new HashMap<>();
+
+	protected final Semaphore writeSemaphore = new Semaphore(1);
+
+	protected CountDownLatch startGate;
+
+	protected CountDownLatch endGate;
+
 	protected List<MessagingTask> producerTasks;
 
 	protected List<MessagingTask> consumerTasks;
 
-	protected final CountDownLatch startGate = new CountDownLatch(1);
-
-	protected CountDownLatch endGate;
-
 	protected void setup(int pairs) {
 		producerTasks = new ArrayList<>(pairs);
 		consumerTasks = new ArrayList<>(pairs);
+		startGate = new CountDownLatch(1);
 		endGate = new CountDownLatch(pairs * 2);
 	}
 
@@ -44,6 +50,9 @@ public abstract class BaseMessagingManager {
 		log.info("Stopping workers...");
 		Stream.concat(producerTasks.stream(), consumerTasks.stream()).forEach(Task::cancel);
 		endGate.await();
+		printStats();
+		producerTasks.clear();
+		consumerTasks.clear();
 	}
 
 	public boolean isProducing() {
@@ -62,23 +71,23 @@ public abstract class BaseMessagingManager {
 		return consumerTasks.stream().anyMatch(MessagingTask::isWorking);
 	}
 
-	protected Map<MessagingStat, Long> getStats() {
-		long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
-		long consumerIn = consumerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
-		long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
-		long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
+	private void generateStats() {
+		if ((producerTasks != null && !producerTasks.isEmpty()) && (consumerTasks != null && !consumerTasks.isEmpty())) {
+			long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
+			long consumerIn = consumerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
+			long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
+			long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
 
-		Map<MessagingStat, Long> stats = new HashMap<>();
-
-		stats.put(MessagingStat.PRODUCER_IN, producerIn);
-		stats.put(MessagingStat.CONSUMER_IN, consumerIn);
-		stats.put(MessagingStat.PRODUCER_OUT, producerOut);
-		stats.put(MessagingStat.CONSUMER_OUT, consumerOut);
-
-		return stats;
+			stats.put(MessagingStat.PRODUCER_IN, producerIn);
+			stats.put(MessagingStat.CONSUMER_IN, consumerIn);
+			stats.put(MessagingStat.PRODUCER_OUT, producerOut);
+			stats.put(MessagingStat.CONSUMER_OUT, consumerOut);
+		}
 	}
 
-	protected void printStats() {
+	private void printStats() {
+		generateStats();
+
 		for (int i = 0; i < producerTasks.size(); i++) {
 			MessagingTask task = producerTasks.get(i);
 			log.info("PRODUCER {} IN {}", i, task.getInCount());
@@ -91,8 +100,13 @@ public abstract class BaseMessagingManager {
 			log.info("CONSUMER {} OUT {}", i, task.getOutCount());
 		}
 
-		getStats().forEach((stat, count) -> {
+		stats.forEach((stat, count) -> {
 			log.info("TOTAL {} - {}", stat, count);
 		});
+	}
+
+	protected Map<MessagingStat, Long> getStats() {
+		generateStats();
+		return stats;
 	}
 }

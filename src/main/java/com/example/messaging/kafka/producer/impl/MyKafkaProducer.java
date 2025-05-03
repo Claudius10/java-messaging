@@ -37,7 +37,7 @@ public class MyKafkaProducer implements Producer<Dish> {
 		try {
 			pending = kafkaTemplate.send(destination, id, content);
 		} catch (KafkaException ex) {
-			log.warn("Failed to send message {} to destination {}", content, destination, ex);
+			log.warn("Failed to send message {} to destination {}: {}", content, destination, ex.getMessage());
 			throw new ProducerSendException();
 		}
 	}
@@ -78,6 +78,10 @@ public class MyKafkaProducer implements Producer<Dish> {
 
 	@Override
 	public boolean isConnected() {
-		return myKafkaAdmin.clusterId() != null;
+		try {
+			return myKafkaAdmin.clusterId() != null;
+		} catch (KafkaException ex) {
+			return false;
+		}
 	}
 }

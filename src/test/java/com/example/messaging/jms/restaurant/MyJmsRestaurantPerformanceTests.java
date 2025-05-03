@@ -2,17 +2,16 @@ package com.example.messaging.jms.restaurant;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.backup.impl.MockBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
-import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.util.MessagingStat;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import jakarta.jms.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.LoggerFactory;
@@ -26,15 +25,21 @@ import java.util.List;
 @Slf4j
 public class MyJmsRestaurantPerformanceTests {
 
-	private final static ArtemisContainer artemis = new ArtemisContainer("apache/activemq-artemis:latest-alpine")
+	private final ArtemisContainer artemis = new ArtemisContainer("apache/activemq-artemis:latest-alpine")
 			.withUser("artemis")
 			.withPassword("artemis");
 
 	private final List<Long> results = new ArrayList<>();
 
-	@BeforeEach
-	public void setUp() {
-		final Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+	@BeforeAll
+	public static void setUp() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+		logger.setLevel(Level.INFO);
+	}
+
+	@AfterAll
+	public static void tearDown() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
 		logger.setLevel(Level.INFO);
 	}
 
@@ -43,7 +48,7 @@ public class MyJmsRestaurantPerformanceTests {
 
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
-		int trials = 10;
+		int trials = 1;
 		int maxTestDurationMs = 10000; // ms
 		int dishesToProduce = 10000; // affects performance
 		int producerIdle = 0; // ms
@@ -55,16 +60,20 @@ public class MyJmsRestaurantPerformanceTests {
 	}
 
 	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
-		// dishes to produce = 1.000.000
-		// how many dishes can be served in 10 seconds?
 
-		TaskExecutor workers = workers(threadPairs);
+		ThreadPoolTaskExecutor workers = new ThreadPoolTaskExecutor();
+		workers.setThreadNamePrefix("worker-");
+		workers.setCorePoolSize(threadPairs * 2); // producers + consumers
+		workers.setWaitForTasksToCompleteOnShutdown(true);
+		workers.initialize();
 
 		for (int i = 0; i < trials; i++) {
 			artemis.start();
 			restaurantTest(workers, maxTestDuration, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 			artemis.stop();
 		}
+
+		workers.destroy();
 	}
 
 	void restaurantTest(TaskExecutor workers, int duration, int pairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
@@ -95,14 +104,12 @@ public class MyJmsRestaurantPerformanceTests {
 		jmsConnectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
 		jmsConnectionFactory.setMaxConnections(jmsProperties.getMaxConnections()); // only threads for producers, not using consumers for this test
 
-		BackupProvider<Dish> backupProvider = new MockBackupProvider();
-
 		MessagingManager myJmsRestaurant = new MyJmsRestaurant(
 				workers,
 				restaurantProperties,
 				jmsProperties,
 				connectionFactory,
-				backupProvider
+				new MockBackupProvider()
 		);
 
 		// Act
@@ -112,15 +119,6 @@ public class MyJmsRestaurantPerformanceTests {
 		myJmsRestaurant.close();
 
 		results.add(myJmsRestaurant.getStats().get(MessagingStat.CONSUMER_OUT));
-	}
-
-	TaskExecutor workers(int pairs) {
-		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setCorePoolSize(pairs * 2); // producers + consumers
-		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
-		taskExecutor.initialize();
-		return taskExecutor;
 	}
 }
 
