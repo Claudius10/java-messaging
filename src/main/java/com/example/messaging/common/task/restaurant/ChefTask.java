@@ -38,6 +38,7 @@ public class ChefTask implements MessagingTask {
 	public void run() {
 		startWork();
 		log.info("Chef shift ended");
+		notifyConsumers();
 	}
 
 	private void startWork() {
@@ -50,7 +51,8 @@ public class ChefTask implements MessagingTask {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				if (cancel) {
-					stopWork();
+					isWorking = false;
+					endGate.countDown();
 					break;
 				}
 
@@ -78,6 +80,7 @@ public class ChefTask implements MessagingTask {
 
 	private void cook(Dish dish) throws InterruptedException {
 		dish.setCooked(true);
+		notifyConsumers();
 		completedDishes.put(dish);
 		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getName());
 	}
@@ -96,7 +99,6 @@ public class ChefTask implements MessagingTask {
 		try {
 			customer.greet();
 			isWorking = true;
-			notifyConsumers();
 		} catch (CustomerGreetException ex) {
 			isWorking = false;
 			if (log.isTraceEnabled()) log.trace("Customer response: '{}'", ex.getMessage());
@@ -108,12 +110,6 @@ public class ChefTask implements MessagingTask {
 			completedDishes.notifyAll();
 			if (log.isTraceEnabled()) log.trace("Notified servers");
 		}
-	}
-
-	private void stopWork() {
-		notifyConsumers();
-		isWorking = false;
-		endGate.countDown();
 	}
 
 	@Override

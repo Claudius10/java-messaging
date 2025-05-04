@@ -1,0 +1,23 @@
+###
+POST http://localhost:8080/jms/producer/start
+
+###
+POST http://localhost:8080/jms/producer/stop
+
+###
+GET http://localhost:8080/jms/producer/stats
+
+###
+POST http://localhost:8080/jms/consumer/start
+
+###
+POST http://localhost:8080/jms/consumer/stop
+
+###
+GET http://localhost:8080/jms/consumer/alive
+
+###
+GET http://localhost:8080/jms/consumer/stats/total
+
+###
+GET http://localhost:8080/jms/consumer/stats/current

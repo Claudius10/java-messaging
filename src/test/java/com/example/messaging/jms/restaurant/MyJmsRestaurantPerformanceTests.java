@@ -10,8 +10,7 @@ import com.example.messaging.jms.config.JmsProperties;
 import jakarta.jms.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.LoggerFactory;
@@ -31,14 +30,8 @@ public class MyJmsRestaurantPerformanceTests {
 
 	private final List<Long> results = new ArrayList<>();
 
-	@BeforeAll
-	public static void setUp() {
-		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
-		logger.setLevel(Level.INFO);
-	}
-
-	@AfterAll
-	public static void tearDown() {
+	@BeforeEach
+	public void setUp() {
 		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
 		logger.setLevel(Level.INFO);
 	}
@@ -57,6 +50,10 @@ public class MyJmsRestaurantPerformanceTests {
 		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 
 		log.info("Average items sent under ten seconds over {} trials: {}", trials, results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0));
+
+		// RESULTS
+		// 6 threads (3 producers - 3 consumers)
+		// 1) 797.396 in 10 seconds (avg 10 trials)
 	}
 
 	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
@@ -94,7 +91,6 @@ public class MyJmsRestaurantPerformanceTests {
 		jmsProperties.setProducer("JmsProducer");
 		jmsProperties.setMaxConnections(pairs);
 		jmsProperties.setPollTimeOut(2);
-		jmsProperties.setConsumerClientId("consumer");
 		jmsProperties.setReconnectionIntervalMs(5000);
 
 		log.info("Broker URL {}", jmsProperties.getBrokerUrl());
@@ -121,12 +117,3 @@ public class MyJmsRestaurantPerformanceTests {
 		results.add(myJmsRestaurant.getStats().get(MessagingStat.CONSUMER_OUT));
 	}
 }
-
-/*
- --- RESULTS ---
-
- 6 threads (3 producers - 3 consumers)
-
- 1) 797.396 in 10 seconds (avg 10 trials)
-
- */

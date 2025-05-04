@@ -21,8 +21,6 @@ public class JmsProperties {
 
 	private String producer;
 
-	private String consumerClientId;
-
 	private String destination;
 
 	private int maxConnections;

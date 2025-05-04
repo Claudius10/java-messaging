@@ -1,0 +1,23 @@
+###
+POST http://localhost:8080/kafka/producer/start
+
+###
+POST http://localhost:8080/kafka/producer/stop
+
+###
+GET http://localhost:8080/kafka/producer/stats
+
+###
+POST http://localhost:8080/kafka/consumer/start
+
+###
+POST http://localhost:8080/kafka/consumer/stop
+
+###
+GET http://localhost:8080/kafka/consumer/alive
+
+###
+GET http://localhost:8080/kafka/consumer/stats/total
+
+###
+GET http://localhost:8080/kafka/consumer/stats/current

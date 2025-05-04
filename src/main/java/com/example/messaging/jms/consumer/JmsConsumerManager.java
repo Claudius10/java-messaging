@@ -2,6 +2,7 @@ package com.example.messaging.jms.consumer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.Lifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jms.config.JmsListenerEndpointRegistry;
 import org.springframework.stereotype.Component;
@@ -12,17 +13,17 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class JmsConsumerManager {
 
-	private final JmsListenerEndpointRegistry registry;
+	private final JmsListenerEndpointRegistry internalJmsListenerEndpointRegistry;
 
-	public void start(String id) {
-		registry.getListenerContainer(id).start();
+	public void start() {
+		internalJmsListenerEndpointRegistry.getListenerContainers().forEach(Lifecycle::start);
 	}
 
-	public void stop(String id) {
-		registry.getListenerContainer(id).stop();
+	public void stop() {
+		internalJmsListenerEndpointRegistry.getListenerContainers().forEach(Lifecycle::stop);
 	}
 
-	public boolean isRunning(String id) {
-		return registry.getListenerContainer(id).isRunning();
+	public boolean isRunning() {
+		return internalJmsListenerEndpointRegistry.isRunning();
 	}
 }

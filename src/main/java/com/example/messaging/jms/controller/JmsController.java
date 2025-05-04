@@ -1,8 +1,8 @@
 package com.example.messaging.jms.controller;
 
 import com.example.messaging.common.manager.MessagingManager;
-import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.consumer.JmsConsumerManager;
+import com.example.messaging.jms.consumer.JmsConsumerMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -21,9 +21,9 @@ public class JmsController {
 
 	private final MessagingManager myJmsRestaurant;
 
-	private final JmsProperties jmsProperties;
-
 	private final JmsConsumerManager consumerOperations;
+
+	private final JmsConsumerMetrics metrics;
 
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
@@ -44,20 +44,39 @@ public class JmsController {
 		}
 	}
 
+	@GetMapping("/producer/stats")
+	public ResponseEntity<?> getProducerStats() {
+		return ResponseEntity.ok().body(myJmsRestaurant.getStats());
+	}
+
 	@PostMapping("/consumer/start")
 	public ResponseEntity<?> startConsumer() {
-		consumerOperations.start(jmsProperties.getConsumerClientId());
+		metrics.reset();
+		consumerOperations.start();
 		return ResponseEntity.ok("Consumer started");
 	}
 
 	@PostMapping("/consumer/stop")
 	public ResponseEntity<?> stopConsumer() {
-		consumerOperations.stop(jmsProperties.getConsumerClientId());
+		consumerOperations.stop();
+		log.info("LISTENER TOTAL {}", metrics.getTotal());
+		log.info("LISTENER CURRENT {}", metrics.getCurrent());
 		return ResponseEntity.ok("Consumer stopped");
 	}
 
-	@GetMapping("/stats")
-	public ResponseEntity<?> getStats() {
-		return ResponseEntity.ok().body(myJmsRestaurant.getStats());
+	@GetMapping("/consumer/alive")
+	public ResponseEntity<?> isConsumerRunning() {
+		boolean running = consumerOperations.isRunning();
+		return ResponseEntity.ok(running);
+	}
+
+	@GetMapping("/consumer/stats/total")
+	public ResponseEntity<?> getSConsumerStatsTotal() {
+		return ResponseEntity.ok().body(metrics.getTotal());
+	}
+
+	@GetMapping("/consumer/stats/current")
+	public ResponseEntity<?> getSConsumerStatsCurrent() {
+		return ResponseEntity.ok().body(metrics.getCurrent());
 	}
 }

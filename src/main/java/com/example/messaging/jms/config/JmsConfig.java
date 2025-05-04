@@ -1,5 +1,6 @@
 package com.example.messaging.jms.config;
 
+import com.example.messaging.jms.listener.MyExceptionListener;
 import jakarta.jms.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
@@ -23,19 +24,24 @@ public class JmsConfig {
 	ConnectionFactory connectionFactory() {
 		JmsPoolConnectionFactory connectionFactory = new JmsPoolConnectionFactory();
 		connectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
-		connectionFactory.setMaxConnections(jmsProperties.getMaxConnections() * 2 + 1); // used for the ListenerContainerFactory (Consumers) and for creating JMSContext (Producers), and 1 for the
-		// schedules backup process
+
+		final int producersAndConsumersPair = jmsProperties.getMaxConnections() * 2;
+		final int listeners = jmsProperties.getMaxConnections();
+		final int scheduledTasksThatNeedAJmsConnection = 1;
+		final int maxConnections = producersAndConsumersPair + listeners + scheduledTasksThatNeedAJmsConnection;
+
+		connectionFactory.setMaxConnections(maxConnections);
 		return connectionFactory;
 	}
 
 	@Bean
-	public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
+	DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
 		DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-		factory.setClientId(jmsProperties.getConsumerClientId());
 		factory.setBackOff(new FixedBackOff(jmsProperties.getReconnectionIntervalMs(), 9999));
 		factory.setConnectionFactory(connectionFactory);
 		factory.setConcurrency(String.valueOf(jmsProperties.getMaxConnections()));
 		factory.setAutoStartup(false);
+		factory.setExceptionListener(new MyExceptionListener());
 		return factory;
 	}
 }

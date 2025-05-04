@@ -4,8 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.util.APIResponses;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @ActiveProfiles("Kafka")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @AutoConfigureMockMvc
 @Slf4j
 public class KafkaAppControllerTests {
@@ -30,19 +28,14 @@ public class KafkaAppControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@BeforeAll
-	public static void setUp() {
+	@BeforeEach
+	public void setUp() {
 		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
 		logger.setLevel(Level.TRACE);
 	}
 
-	@AfterAll
-	public static void tearDown() {
-		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
-		logger.setLevel(Level.INFO);
-	}
-
 	@Test
+	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenWorking_thenReturnBadRequest() throws Exception {
 
 		// Arrange
@@ -61,6 +54,7 @@ public class KafkaAppControllerTests {
 	}
 
 	@Test
+	@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 	void givenStop_whenAllowedToStop_thenReturnOk() throws Exception {
 
 		// Arrange

@@ -3,6 +3,7 @@ package com.example.messaging.kafka.controller;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.consumer.KafkaConsumerManager;
+import com.example.messaging.kafka.consumer.KafkaConsumerMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -26,6 +27,8 @@ public class KafkaController {
 
 	private final KafkaConsumerManager consumerOperations;
 
+	private final KafkaConsumerMetrics metrics;
+
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
 		log.info("Opening Kafka restaurant...");
@@ -45,9 +48,15 @@ public class KafkaController {
 		}
 	}
 
+	@GetMapping("/producer/stats")
+	public ResponseEntity<?> getStats() {
+		return ResponseEntity.ok().body(myKafkaRestaurant.getStats());
+	}
+
 	@PostMapping("/consumer/start")
 	public ResponseEntity<?> startConsumer() {
 		try {
+			metrics.reset();
 			consumerOperations.start(kafkaProperties.getConsumerClientId());
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
@@ -60,6 +69,8 @@ public class KafkaController {
 	public ResponseEntity<?> stopConsumer() {
 		try {
 			consumerOperations.stop(kafkaProperties.getConsumerClientId());
+			log.info("LISTENER TOTAL {}", metrics.getTotal());
+			log.info("LISTENER CURRENT {}", metrics.getCurrent());
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
 		}
@@ -67,8 +78,19 @@ public class KafkaController {
 		return ResponseEntity.ok("Consumer stopped");
 	}
 
-	@GetMapping("/stats")
-	public ResponseEntity<?> getStats() {
-		return ResponseEntity.ok().body(myKafkaRestaurant.getStats());
+	@GetMapping("/consumer/alive")
+	public ResponseEntity<?> isConsumerRunning() {
+		boolean running = consumerOperations.isRunning(kafkaProperties.getConsumerClientId());
+		return ResponseEntity.ok(running);
+	}
+
+	@GetMapping("/consumer/stats/total")
+	public ResponseEntity<?> getSConsumerStatsTotal() {
+		return ResponseEntity.ok().body(metrics.getTotal());
+	}
+
+	@GetMapping("/consumer/stats/current")
+	public ResponseEntity<?> getSConsumerStatsCurrent() {
+		return ResponseEntity.ok().body(metrics.getCurrent());
 	}
 }

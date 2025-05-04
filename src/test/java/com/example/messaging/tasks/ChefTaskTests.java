@@ -1,10 +1,14 @@
 package com.example.messaging.tasks;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.customer.RestaurantCustomer;
 import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.task.restaurant.ChefTask;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -13,6 +17,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ChefTaskTests {
+
+	@BeforeEach
+	public void setUp() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+		logger.setLevel(Level.TRACE);
+	}
 
 	@Test
 	void givenStart_thenGreetCustomer() throws InterruptedException {

@@ -18,8 +18,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
@@ -41,14 +40,8 @@ public class MyKafkaRestaurantPerformanceTests {
 
 	private final List<Long> results = new ArrayList<>();
 
-	@BeforeAll
-	public static void setUp() {
-		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
-		logger.setLevel(Level.INFO);
-	}
-
-	@AfterAll
-	public static void tearDown() {
+	@BeforeEach
+	public void setUp() {
 		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
 		logger.setLevel(Level.INFO);
 	}
@@ -67,6 +60,10 @@ public class MyKafkaRestaurantPerformanceTests {
 		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 
 		log.info("Average items sent under ten seconds over {} trials: {}", trials, new BigDecimal(results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0)).toPlainString());
+
+		// RESULTS
+		// 6 threads (3 producers - 3 consumers)
+		// 1) 16.709.088 in 10 seconds (avg 10 trials)
 	}
 
 	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
@@ -171,12 +168,3 @@ public class MyKafkaRestaurantPerformanceTests {
 		return producerFactory;
 	}
 }
-
-/*
- --- RESULTS ---
-
- 6 threads (3 producers - 3 consumers)
-
- 1)  16.709.088 in 10 seconds (avg 10 trials)
-
- */

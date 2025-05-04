@@ -2,6 +2,7 @@ package com.example.messaging.kafka.config;
 
 import com.example.messaging.kafka.listener.MyProducerListener;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.LongDeserializer;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 
@@ -41,7 +43,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
-	public ConsumerFactory<Long, String> consumerFactory() {
+	ConsumerFactory<Long, String> consumerFactory() {
 		return new DefaultKafkaConsumerFactory<>(consumerConfigs());
 	}
 
@@ -81,5 +83,13 @@ public class KafkaConfig {
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 		return props;
+	}
+
+	@Bean
+	public NewTopic topic() {
+		return TopicBuilder.name(kafkaProperties.getTopic())
+				.partitions(kafkaProperties.getMaxConnections())
+				.replicas(1)
+				.build();
 	}
 }

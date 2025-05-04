@@ -17,7 +17,8 @@ public class AsyncConfig {
 	TaskExecutor workers() {
 		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
 		taskExecutor.setThreadNamePrefix("worker-");
-		taskExecutor.setCorePoolSize(restaurantProperties.getMaxConnections() * 2); // producers + consumers
+		final int producersAndConsumersPair = restaurantProperties.getMaxConnections() * 2;
+		taskExecutor.setCorePoolSize(producersAndConsumersPair);
 		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		return taskExecutor;
 	}

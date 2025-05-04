@@ -1,5 +1,7 @@
 package com.example.messaging.restaurant;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.util.MessagingStat;
@@ -8,7 +10,9 @@ import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.restaurant.MyJmsRestaurant;
 import jakarta.jms.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -19,6 +23,12 @@ import static org.mockito.Mockito.mock;
 
 @Slf4j
 public class RestaurantSafetyTests {
+
+	@BeforeEach
+	public void setUp() {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
+		logger.setLevel(Level.INFO);
+	}
 
 	@Test
 	void givenNDishes_thenServerAndCookNDishes() throws InterruptedException {
@@ -64,7 +74,6 @@ public class RestaurantSafetyTests {
 		jmsProperties.setProducer("NoopProducer");
 		jmsProperties.setMaxConnections(pairs);
 		jmsProperties.setPollTimeOut(2);
-		jmsProperties.setConsumerClientId("consumer");
 		jmsProperties.setReconnectionIntervalMs(5000);
 
 		ConnectionFactory jmsConnectionFactory = mock(ConnectionFactory.class);
