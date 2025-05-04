@@ -34,13 +34,13 @@ public class JmsCheckBackup implements BackupCheck {
 	}
 
 	private void processBackedUpMessages() {
-		if (log.isTraceEnabled()) log.trace("Processing backup...");
+		log.info("Processing backup...");
 
 		try {
 			backupProvider.open();
 
 			if (backupProvider.hasMoreElements()) {
-				if (log.isTraceEnabled()) log.trace("Found backed up messages");
+				log.info("Found backed up messages");
 
 				producer = new MyJmsProducer(connectionFactory, jmsProperties);
 
@@ -56,10 +56,10 @@ public class JmsCheckBackup implements BackupCheck {
 					producer.close();
 
 				} else {
-					if (log.isTraceEnabled()) log.trace("Unable to proceed with backup processing: producer is not connected");
+					log.info("Unable to proceed with backup processing: producer is not connected");
 				}
 			} else {
-				if (log.isTraceEnabled()) log.trace("No backed up messages found");
+				log.info("No backed up messages found");
 			}
 
 			backupProvider.close();

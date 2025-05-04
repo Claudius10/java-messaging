@@ -57,7 +57,7 @@ public class JmsControllerBrokerOnTests {
 	@BeforeEach
 	public void setUp() {
 		Logger logger = (Logger) LoggerFactory.getLogger("com.example.messaging");
-		logger.setLevel(Level.INFO);
+		logger.setLevel(Level.TRACE);
 	}
 
 	@RepeatedTest(value = 2, failureThreshold = 1)
