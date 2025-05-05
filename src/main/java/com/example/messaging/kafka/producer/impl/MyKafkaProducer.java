@@ -45,7 +45,7 @@ public class MyKafkaProducer implements Producer<Dish> {
 			return;
 		}
 
-		pending.whenComplete((result, ex) -> kafkaTemplate.getProducerFactory().closeThreadBoundProducer());
+		pending.whenComplete((_, _) -> kafkaTemplate.getProducerFactory().closeThreadBoundProducer());
 	}
 
 	@Override
