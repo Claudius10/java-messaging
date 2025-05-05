@@ -67,9 +67,7 @@ public abstract class BaseMessagingManager {
 			log.info("CONSUMER {} OUT {}", i, task.getOutCount());
 		}
 
-		stats.forEach((stat, count) -> {
-			log.info("TOTAL {} - {}", stat, count);
-		});
+		stats.forEach((stat, count) -> log.info("TOTAL {} - {}", stat, count));
 	}
 
 	private void collectStats() {
