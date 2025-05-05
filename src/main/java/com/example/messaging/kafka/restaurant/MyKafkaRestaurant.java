@@ -10,7 +10,7 @@ import com.example.messaging.common.producer.impl.NoopProducer;
 import com.example.messaging.common.task.MessagingTask;
 import com.example.messaging.common.task.restaurant.ChefTask;
 import com.example.messaging.common.task.restaurant.ServerTask;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
@@ -81,7 +81,6 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 			MessagingTask serverTask = new ServerTask(
 					startGate,
 					endGate,
-					writeSemaphore,
 					dishesQueue,
 					buildProducer(),
 					dishBackupProvider,
@@ -113,7 +112,7 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 	}
 
 	@Override
-	public Map<MessagingStat, Long> getStats() {
+	public Map<MessagingMetric, Long> getStats() {
 		return super.getStats();
 	}
 }

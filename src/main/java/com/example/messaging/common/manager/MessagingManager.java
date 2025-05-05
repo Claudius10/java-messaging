@@ -1,6 +1,6 @@
 package com.example.messaging.common.manager;
 
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 
 import java.util.Map;
 
@@ -14,5 +14,5 @@ public interface MessagingManager {
 
 	boolean isConsuming();
 
-	Map<MessagingStat, Long> getStats();
+	Map<MessagingMetric, Long> getStats();
 }

@@ -3,8 +3,8 @@ package com.example.messaging.kafka.backup;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupCheck;
-import com.example.messaging.common.backup.BackupProvider;
-import com.example.messaging.common.model.Dish;
+import com.example.messaging.common.util.ProducerMetric;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @ActiveProfiles("Kafka")
@@ -37,7 +40,7 @@ public class KafkaBackupTests {
 	private BackupCheck backup;
 
 	@Autowired
-	private BackupProvider<Dish> backupProvider;
+	private ObjectMapper objectMapper;
 
 	@BeforeEach
 	public void setUp() {
@@ -54,14 +57,21 @@ public class KafkaBackupTests {
 		MockHttpServletResponse startProducer = mockMvc.perform(post("/kafka/producer/start")).andReturn().getResponse();
 		assertThat(startProducer.getStatus()).isEqualTo(HttpStatus.OK.value());
 
-		// wait to send messages to back up
+		// wait to back up messages
 		Thread.sleep(1000);
 
 		// stop producer
 		MockHttpServletResponse stopProducer = mockMvc.perform(post("/kafka/producer/stop")).andReturn().getResponse();
 		assertThat(stopProducer.getStatus()).isEqualTo(HttpStatus.OK.value());
 
-		assertThat(backupProvider.hasMoreElements()).isTrue();
+		// get producer stats
+		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/kafka/producer/metrics")).andReturn().getResponse();
+		assertThat(producerStatsResponse.getStatus()).isEqualTo(HttpStatus.OK.value());
+
+		Map stats = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
+
+		assertThat(stats.get(ProducerMetric.ERROR.toString())).isNotEqualTo(0);
+		assertThat(stats.get(ProducerMetric.RESENT.toString())).isEqualTo(0);
 
 		// Act
 
@@ -74,7 +84,18 @@ public class KafkaBackupTests {
 
 		// Assert
 
-		assertThat(backupProvider.hasMoreElements()).isFalse();
+		MockHttpServletResponse producerStatsResponseTwo = mockMvc.perform(get("/kafka/producer/metrics")).andReturn().getResponse();
+		assertThat(producerStatsResponseTwo.getStatus()).isEqualTo(HttpStatus.OK.value());
+
+		Map statsTwo = objectMapper.readValue(producerStatsResponseTwo.getContentAsString(), Map.class);
+		int error = (int) statsTwo.get(ProducerMetric.ERROR.toString());
+		int resent = (int) statsTwo.get(ProducerMetric.RESENT.toString());
+		int sent = (int) statsTwo.get(ProducerMetric.SENT.toString());
+		int total = (int) statsTwo.get(ProducerMetric.TOTAL.toString());
+
+		assertThat(resent).isEqualTo(error);
+		assertThat(total).isEqualTo(error + sent);
+
 		kafka.stop();
 	}
 }

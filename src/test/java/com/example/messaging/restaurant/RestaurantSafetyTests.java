@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.restaurant.MyJmsRestaurant;
@@ -91,15 +91,15 @@ public class RestaurantSafetyTests {
 
 		myJmsRestaurant.open();
 		Thread.sleep(duration);
-		Map<MessagingStat, Long> stats = myJmsRestaurant.getStats();
+		Map<MessagingMetric, Long> stats = myJmsRestaurant.getStats();
 		myJmsRestaurant.close();
 
 		// Assert
 
 		int expectedDishesToProduce = amount * pairs;
-		assertThat(stats.get(MessagingStat.PRODUCER_IN)).isEqualTo(expectedDishesToProduce);
-		assertThat(stats.get(MessagingStat.CONSUMER_IN)).isEqualTo(expectedDishesToProduce);
-		assertThat(stats.get(MessagingStat.PRODUCER_OUT)).isEqualTo(expectedDishesToProduce);
-		assertThat(stats.get(MessagingStat.CONSUMER_OUT)).isEqualTo(expectedDishesToProduce);
+		assertThat(stats.get(MessagingMetric.PRODUCER_IN)).isEqualTo(expectedDishesToProduce);
+		assertThat(stats.get(MessagingMetric.CONSUMER_IN)).isEqualTo(expectedDishesToProduce);
+		assertThat(stats.get(MessagingMetric.PRODUCER_OUT)).isEqualTo(expectedDishesToProduce);
+		assertThat(stats.get(MessagingMetric.CONSUMER_OUT)).isEqualTo(expectedDishesToProduce);
 	}
 }

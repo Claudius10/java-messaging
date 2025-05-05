@@ -1,7 +1,6 @@
 package com.example.messaging.common.util;
 
-public enum MessagingStat {
-
+public enum MessagingMetric {
 	PRODUCER_IN,
 	PRODUCER_OUT,
 	CONSUMER_IN,

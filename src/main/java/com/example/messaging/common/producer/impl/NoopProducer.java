@@ -6,7 +6,7 @@ import com.example.messaging.common.producer.Producer;
 public class NoopProducer implements Producer<Dish> {
 
 	@Override
-	public void sendTextMessage(Dish dish) {
+	public void send(Dish dish) {
 	}
 
 	@Override

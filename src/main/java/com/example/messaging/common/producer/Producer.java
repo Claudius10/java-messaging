@@ -4,7 +4,7 @@ import com.example.messaging.common.exception.producer.ProducerDeliveryException
 
 public interface Producer<T> {
 
-	void sendTextMessage(T object) throws ProducerDeliveryException;
+	void send(T object) throws ProducerDeliveryException;
 
 	void close();
 

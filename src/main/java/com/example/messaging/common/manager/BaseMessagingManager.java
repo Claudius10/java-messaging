@@ -2,7 +2,7 @@ package com.example.messaging.common.manager;
 
 import com.example.messaging.common.task.MessagingTask;
 import com.example.messaging.common.task.Task;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -10,15 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
 @Slf4j
 public abstract class BaseMessagingManager {
 
-	protected final Map<MessagingStat, Long> stats = new HashMap<>();
-
-	protected final Semaphore writeSemaphore = new Semaphore(1);
+	protected final Map<MessagingMetric, Long> stats = new HashMap<>();
 
 	protected CountDownLatch startGate;
 
@@ -55,22 +52,6 @@ public abstract class BaseMessagingManager {
 		consumerTasks.clear();
 	}
 
-	public boolean isProducing() {
-		if (producerTasks == null || producerTasks.isEmpty()) {
-			return false;
-		}
-
-		return producerTasks.stream().anyMatch(MessagingTask::isWorking);
-	}
-
-	public boolean isConsuming() {
-		if (consumerTasks == null || consumerTasks.isEmpty()) {
-			return false;
-		}
-
-		return consumerTasks.stream().anyMatch(MessagingTask::isWorking);
-	}
-
 	private void printStats() {
 		collectStats();
 
@@ -91,11 +72,6 @@ public abstract class BaseMessagingManager {
 		});
 	}
 
-	protected Map<MessagingStat, Long> getStats() {
-		collectStats();
-		return stats;
-	}
-
 	private void collectStats() {
 		if ((producerTasks != null && !producerTasks.isEmpty()) && (consumerTasks != null && !consumerTasks.isEmpty())) {
 			long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
@@ -103,10 +79,31 @@ public abstract class BaseMessagingManager {
 			long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
 			long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
 
-			stats.put(MessagingStat.PRODUCER_IN, producerIn);
-			stats.put(MessagingStat.CONSUMER_IN, consumerIn);
-			stats.put(MessagingStat.PRODUCER_OUT, producerOut);
-			stats.put(MessagingStat.CONSUMER_OUT, consumerOut);
+			stats.put(MessagingMetric.PRODUCER_IN, producerIn);
+			stats.put(MessagingMetric.CONSUMER_IN, consumerIn);
+			stats.put(MessagingMetric.PRODUCER_OUT, producerOut);
+			stats.put(MessagingMetric.CONSUMER_OUT, consumerOut);
 		}
+	}
+
+	protected Map<MessagingMetric, Long> getStats() {
+		collectStats();
+		return stats;
+	}
+
+	public boolean isProducing() {
+		if (producerTasks == null || producerTasks.isEmpty()) {
+			return false;
+		}
+
+		return producerTasks.stream().anyMatch(MessagingTask::isWorking);
+	}
+
+	public boolean isConsuming() {
+		if (consumerTasks == null || consumerTasks.isEmpty()) {
+			return false;
+		}
+
+		return consumerTasks.stream().anyMatch(MessagingTask::isWorking);
 	}
 }

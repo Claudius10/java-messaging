@@ -1,9 +1,10 @@
 package com.example.messaging.kafka.controller;
 
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ConsumerMetrics;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.consumer.KafkaConsumerManager;
-import com.example.messaging.kafka.consumer.KafkaConsumerMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -27,11 +28,14 @@ public class KafkaController {
 
 	private final KafkaConsumerManager consumerOperations;
 
-	private final KafkaConsumerMetrics metrics;
+	private final ConsumerMetrics consumerMetrics;
+
+	private final ProducerMetrics producerMetrics;
 
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
 		log.info("Opening Kafka restaurant...");
+		producerMetrics.reset();
 		myKafkaRestaurant.open();
 		return ResponseEntity.ok().build();
 	}
@@ -41,6 +45,7 @@ public class KafkaController {
 		try {
 			log.info("Closing Kafka restaurant...");
 			myKafkaRestaurant.close();
+			producerMetrics.print();
 			return ResponseEntity.ok().build();
 		} catch (InterruptedException e) {
 			log.error("Interrupted with closing Kafka Restaurant: {}", e.getMessage());
@@ -48,15 +53,15 @@ public class KafkaController {
 		}
 	}
 
-	@GetMapping("/producer/stats")
+	@GetMapping("/producer/metrics")
 	public ResponseEntity<?> getStats() {
-		return ResponseEntity.ok().body(myKafkaRestaurant.getStats());
+		return ResponseEntity.ok().body(producerMetrics.getMetrics());
 	}
 
 	@PostMapping("/consumer/start")
 	public ResponseEntity<?> startConsumer() {
 		try {
-			metrics.reset();
+			consumerMetrics.reset();
 			consumerOperations.start(kafkaProperties.getConsumerClientId());
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
@@ -69,8 +74,7 @@ public class KafkaController {
 	public ResponseEntity<?> stopConsumer() {
 		try {
 			consumerOperations.stop(kafkaProperties.getConsumerClientId());
-			log.info("LISTENER TOTAL {}", metrics.getTotal());
-			log.info("LISTENER CURRENT {}", metrics.getCurrent());
+			consumerMetrics.print();
 		} catch (KafkaException ex) {
 			return ResponseEntity.ok(ex.getMessage());
 		}
@@ -84,13 +88,8 @@ public class KafkaController {
 		return ResponseEntity.ok(running);
 	}
 
-	@GetMapping("/consumer/stats/total")
+	@GetMapping("/consumer/metrics")
 	public ResponseEntity<?> getSConsumerStatsTotal() {
-		return ResponseEntity.ok().body(metrics.getTotal());
-	}
-
-	@GetMapping("/consumer/stats/current")
-	public ResponseEntity<?> getSConsumerStatsCurrent() {
-		return ResponseEntity.ok().body(metrics.getCurrent());
+		return ResponseEntity.ok().body(consumerMetrics.getMetrics());
 	}
 }

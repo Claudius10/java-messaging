@@ -2,7 +2,7 @@ package com.example.messaging.jms.controller;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -110,10 +110,10 @@ public class JmsControllerBrokerOnTests {
 
 		// assert producer stats
 		Map stats = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
-		assertThat(stats.get(MessagingStat.PRODUCER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.CONSUMER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.PRODUCER_OUT.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.CONSUMER_OUT.toString())).isEqualTo(expected);
+		assertThat(stats.get(MessagingMetric.PRODUCER_IN.toString())).isEqualTo(expected);
+		assertThat(stats.get(MessagingMetric.CONSUMER_IN.toString())).isEqualTo(expected);
+		assertThat(stats.get(MessagingMetric.PRODUCER_OUT.toString())).isEqualTo(expected);
+		assertThat(stats.get(MessagingMetric.CONSUMER_OUT.toString())).isEqualTo(expected);
 
 		// assert consumer stats
 		assertThat(Integer.valueOf(consumerStats.getContentAsString())).isEqualTo(expected);

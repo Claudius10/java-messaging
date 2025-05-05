@@ -5,11 +5,13 @@ import com.example.messaging.common.model.Dish;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @Component
 @Slf4j
 public class MockBackupProvider implements BackupProvider<Dish> {
 
-	private long count = 0;
+	private final AtomicLong count = new AtomicLong(0);
 
 	@Override
 	public void open() {
@@ -23,26 +25,26 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public boolean hasMoreElements() {
-		return count != 0;
+		return count.get() != 0;
 	}
 
 	@Override
-	public void write(Dish dish) {
+	public void send(Dish dish) {
 		checkOpen();
-		if (log.isTraceEnabled()) log.trace("Backing up dish {}", dish.getName());
-		count++;
+		count.getAndIncrement();
+		log.warn("Backed up dish {}", dish.getName());
 	}
 
 	@Override
 	public Dish read() {
-		Dish dish = Dish.builder().withId(count).withCooked(true).withName("Delicious dish " + count).build();
-		count--;
+		Dish dish = Dish.builder().withId(count.get()).withCooked(true).withName("Delicious dish " + count.get()).build();
+		count.decrementAndGet();
 		return dish;
 	}
 
 	@Override
 	public void onFailure(Dish dish) {
-		if (log.isTraceEnabled()) log.trace("Failed to resend dish {}", dish.getName());
+		log.error("Failed to resend dish {}", dish.getName());
 	}
 
 	private void checkOpen() {

@@ -1,5 +1,6 @@
 package com.example.messaging.kafka.consumer;
 
+import com.example.messaging.common.metrics.ConsumerMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class KafkaConsumer {
 
-	private final KafkaConsumerMetrics metrics;
+	private final ConsumerMetrics metrics;
 
 	@KafkaListener(id = "${kafka.consumer-client-id}", groupId = "${kafka.consumer-group-id}", topics = "${kafka.topic}")
 	public void receive(ConsumerRecord<Integer, String> record) {

@@ -30,10 +30,6 @@ public class JmsCheckBackup implements BackupCheck {
 
 	@Override
 	public void backupCheck() {
-		processBackedUpMessages();
-	}
-
-	private void processBackedUpMessages() {
 		log.info("Processing backup...");
 
 		try {
@@ -83,7 +79,7 @@ public class JmsCheckBackup implements BackupCheck {
 	private void resend(Dish dish) {
 		try {
 			if (log.isTraceEnabled()) log.trace("Resending dish {}", dish.getName());
-			producer.sendTextMessage(dish);
+			producer.send(dish);
 		} catch (Exception ex) {
 			backupProvider.onFailure(dish);
 		}

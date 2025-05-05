@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -20,8 +19,6 @@ public class ServerTask implements MessagingTask {
 	private final CountDownLatch startGate;
 
 	private final CountDownLatch endGate;
-
-	private final Semaphore writePermit;
 
 	private final BlockingQueue<Dish> completedDishes;
 
@@ -87,15 +84,14 @@ public class ServerTask implements MessagingTask {
 	private void serve(Dish dish) throws InterruptedException {
 		if (log.isTraceEnabled()) log.trace("Served {}", dish.getName());
 		try {
-			producer.sendTextMessage(dish);
+			producer.send(dish);
 		} catch (ProducerDeliveryException ex) {
-			writePermit.acquire();
-			backupProvider.write(dish);
-			writePermit.release();
+			backupProvider.send(dish);
 		}
 	}
 
 	private void handleIdle() throws InterruptedException {
+		isWorking = false;
 		long elapsed = System.currentTimeMillis() - timeOfLastDish;
 		if (elapsed > consumerIdle) {
 			if (log.isTraceEnabled()) log.trace("Elapsed time: {} ms", elapsed);
@@ -107,7 +103,6 @@ public class ServerTask implements MessagingTask {
 	private void pause() throws InterruptedException {
 		synchronized (completedDishes) {
 			if (!cancel) {
-				isWorking = false;
 				if (log.isTraceEnabled()) log.trace("Waiting for work...");
 				completedDishes.wait();
 			}

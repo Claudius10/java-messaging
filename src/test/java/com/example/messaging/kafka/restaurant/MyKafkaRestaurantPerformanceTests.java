@@ -5,11 +5,13 @@ import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.backup.impl.MockBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.ProducerMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
+import com.example.messaging.kafka.listener.MyProducerListener;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -51,7 +53,7 @@ public class MyKafkaRestaurantPerformanceTests {
 
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
-		int trials = 1;
+		int trials = 3;
 		int maxTestDurationMs = 10000; // ms
 		int dishesToProduce = 10000; // affects performance
 		int producerIdle = 0; // ms
@@ -59,7 +61,7 @@ public class MyKafkaRestaurantPerformanceTests {
 
 		testPerformance(trials, maxTestDurationMs, threadPairs, queueCapacity, dishesToProduce, producerIdle, consumerIdle);
 
-		log.info("Average items sent under ten seconds over {} trials: {}", trials, new BigDecimal(results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0)).toPlainString());
+		log.info("Average items sent under ten seconds over {} trials: {}", trials, BigDecimal.valueOf(results.stream().mapToDouble(Long::doubleValue).average().orElse(0.0)).toPlainString());
 
 		// RESULTS
 		// 6 threads (3 producers - 3 consumers)
@@ -117,8 +119,10 @@ public class MyKafkaRestaurantPerformanceTests {
 		KafkaAdmin kafkaAdmin = kafkaTemplate.getKafkaAdmin();
 		MyKafkaAdmin myKafkaAdmin = new MyKafkaAdmin(kafkaAdmin);
 		BackupProvider<Dish> backupProvider = new MockBackupProvider();
+		ProducerMetrics producerMetrics = new ProducerMetrics();
+		kafkaTemplate.setProducerListener(new MyProducerListener(backupProvider, producerMetrics));
 
-		MessagingManager myJmsRestaurant = new MyKafkaRestaurant(
+		MessagingManager myKafkaRestaurant = new MyKafkaRestaurant(
 				workers,
 				restaurantProperties,
 				kafkaProperties,
@@ -129,11 +133,11 @@ public class MyKafkaRestaurantPerformanceTests {
 
 		// Act
 
-		myJmsRestaurant.open();
+		myKafkaRestaurant.open();
 		Thread.sleep(duration);
-		myJmsRestaurant.close();
+		myKafkaRestaurant.close();
 
-		results.add(myJmsRestaurant.getStats().get(MessagingStat.CONSUMER_OUT));
+		results.add(producerMetrics.getMetrics().get(ProducerMetric.SENT));
 	}
 
 	private void createTopic(String url, String topicName) {

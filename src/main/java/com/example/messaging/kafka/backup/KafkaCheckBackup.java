@@ -4,6 +4,7 @@ import com.example.messaging.common.backup.BackupCheck;
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.exception.backup.BackupProcessException;
 import com.example.messaging.common.exception.backup.BackupReadException;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
@@ -27,16 +28,14 @@ public class KafkaCheckBackup implements BackupCheck {
 
 	private final MyKafkaAdmin myKafkaAdmin;
 
+	private final ProducerMetrics producerMetrics;
+
 	private final BackupProvider<Dish> backupProvider;
 
 	private Producer<Dish> producer;
 
 	@Override
 	public void backupCheck() {
-		processBackedUpMessages();
-	}
-
-	private void processBackedUpMessages() {
 		log.info("Processing backup...");
 
 		try {
@@ -66,8 +65,13 @@ public class KafkaCheckBackup implements BackupCheck {
 			}
 
 			backupProvider.close();
+			// wait to receive all acks from broker
+			Thread.sleep(10000);
+			producerMetrics.print();
 		} catch (BackupProcessException ex) {
 			log.error("Backup processing failed {}", ex.getMessage());
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -86,7 +90,8 @@ public class KafkaCheckBackup implements BackupCheck {
 	private void resend(Dish dish) {
 		try {
 			if (log.isTraceEnabled()) log.trace("Resending dish {}", dish.getName());
-			producer.sendTextMessage(dish);
+			producer.send(dish);
+			producerMetrics.resent();
 		} catch (Exception ex) {
 			backupProvider.onFailure(dish);
 		}

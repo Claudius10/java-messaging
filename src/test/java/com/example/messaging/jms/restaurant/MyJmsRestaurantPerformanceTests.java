@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.impl.MockBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import jakarta.jms.ConnectionFactory;
@@ -114,6 +114,6 @@ public class MyJmsRestaurantPerformanceTests {
 		Thread.sleep(duration);
 		myJmsRestaurant.close();
 
-		results.add(myJmsRestaurant.getStats().get(MessagingStat.CONSUMER_OUT));
+		results.add(myJmsRestaurant.getStats().get(MessagingMetric.CONSUMER_OUT));
 	}
 }

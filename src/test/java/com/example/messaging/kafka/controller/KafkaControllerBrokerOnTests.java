@@ -2,10 +2,10 @@ package com.example.messaging.kafka.controller;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.ConsumerMetric;
+import com.example.messaging.common.util.ProducerMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.kafka.config.KafkaProperties;
-import com.example.messaging.kafka.listener.MyProducerListener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -30,6 +30,7 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.support.ProducerListener;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -109,11 +110,11 @@ public class KafkaControllerBrokerOnTests {
 		assertThat(consumerRunningTwo.getContentAsString()).isEqualTo("false");
 
 		// get consumer stats
-		MockHttpServletResponse consumerStats = mockMvc.perform(get("/kafka/consumer/stats/current")).andReturn().getResponse();
+		MockHttpServletResponse consumerStats = mockMvc.perform(get("/kafka/consumer/metrics")).andReturn().getResponse();
 		assertThat(consumerStats.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		// get producer stats
-		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/kafka/producer/stats")).andReturn().getResponse();
+		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/kafka/producer/metrics")).andReturn().getResponse();
 		assertThat(producerStatsResponse.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		// Assert
@@ -121,14 +122,13 @@ public class KafkaControllerBrokerOnTests {
 		final int expected = restaurantProperties.getDishesToProduce() * restaurantProperties.getMaxConnections();
 
 		// assert producer stats
-		Map stats = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
-		assertThat(stats.get(MessagingStat.PRODUCER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.CONSUMER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.PRODUCER_OUT.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingStat.CONSUMER_OUT.toString())).isEqualTo(expected);
+		Map producerMetrics = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
+		assertThat(producerMetrics.get(ProducerMetric.SENT.toString())).isEqualTo(expected);
+		assertThat(producerMetrics.get(ProducerMetric.ERROR.toString())).isEqualTo(0);
 
 		// assert consumer stats
-		assertThat(Integer.valueOf(consumerStats.getContentAsString())).isEqualTo(expected);
+		Map consumerMetrics = objectMapper.readValue(consumerStats.getContentAsString(), Map.class);
+		assertThat(consumerMetrics.get(ConsumerMetric.CURRENT.toString())).isEqualTo(expected);
 	}
 
 	@TestConfiguration
@@ -168,9 +168,9 @@ public class KafkaControllerBrokerOnTests {
 
 		@Bean
 		@Primary
-		KafkaTemplate<Long, String> kafkaTemplateTest(ProducerFactory<Long, String> producerFactoryTest) {
+		KafkaTemplate<Long, String> kafkaTemplateTest(ProducerFactory<Long, String> producerFactoryTest, ProducerListener<Long, String> myProducerListener) {
 			KafkaTemplate<Long, String> template = new KafkaTemplate<>(producerFactoryTest);
-			template.setProducerListener(new MyProducerListener());
+			template.setProducerListener(myProducerListener);
 			return template;
 		}
 

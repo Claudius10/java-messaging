@@ -8,7 +8,7 @@ public interface BackupProvider<T> {
 
 	boolean hasMoreElements();
 
-	void write(T object);
+	void send(T object);
 
 	T read();
 

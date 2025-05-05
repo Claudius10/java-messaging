@@ -10,7 +10,7 @@ import com.example.messaging.common.producer.impl.NoopProducer;
 import com.example.messaging.common.task.MessagingTask;
 import com.example.messaging.common.task.restaurant.ChefTask;
 import com.example.messaging.common.task.restaurant.ServerTask;
-import com.example.messaging.common.util.MessagingStat;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.producer.impl.MyJmsProducer;
@@ -78,7 +78,6 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 			MessagingTask serverTask = new ServerTask(
 					startGate,
 					endGate,
-					writeSemaphore,
 					dishesQueue,
 					buildProducer(),
 					dishBackupProvider,
@@ -110,7 +109,7 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 	}
 
 	@Override
-	public Map<MessagingStat, Long> getStats() {
+	public Map<MessagingMetric, Long> getStats() {
 		return super.getStats();
 	}
 }

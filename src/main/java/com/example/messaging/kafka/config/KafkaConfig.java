@@ -1,6 +1,5 @@
 package com.example.messaging.kafka.config;
 
-import com.example.messaging.kafka.listener.MyProducerListener;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -18,6 +17,7 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.support.ProducerListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,9 +59,9 @@ public class KafkaConfig {
 	// Producer
 
 	@Bean
-	KafkaTemplate<Long, String> kafkaTemplate(ProducerFactory<Long, String> producerFactory) {
+	KafkaTemplate<Long, String> kafkaTemplate(ProducerFactory<Long, String> producerFactory, ProducerListener<Long, String> myProducerListener) {
 		KafkaTemplate<Long, String> template = new KafkaTemplate<>(producerFactory);
-		template.setProducerListener(new MyProducerListener());
+		template.setProducerListener(myProducerListener);
 		return template;
 	}
 
@@ -78,6 +78,8 @@ public class KafkaConfig {
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBrokerUrl());
 		props.put(ProducerConfig.CLIENT_ID_CONFIG, kafkaProperties.getProducerClientId());
 		props.put(ProducerConfig.ACKS_CONFIG, kafkaProperties.getProducerAckMode());
+		props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, kafkaProperties.getProducerBlockMs());
+		props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, kafkaProperties.getProducerBlockMs());
 		props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, kafkaProperties.getProducerBlockMs()); // ms to wait before throwing when attempting to send
 		props.put(ProducerConfig.RECONNECT_BACKOFF_MS_CONFIG, kafkaProperties.getProducerTimeOutMs()); // ms between producer connection attempts
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
