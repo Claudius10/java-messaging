@@ -23,14 +23,14 @@ public class MyProducerListener implements ProducerListener<Long, String> {
 
 	@Override
 	public void onSuccess(ProducerRecord<Long, String> record, RecordMetadata recordMetadata) {
-		producerMetrics.sent();
-		if (log.isTraceEnabled()) log.trace("Sent message '{}' to destination '{}'", record.value(), recordMetadata.topic());
+		long sent = producerMetrics.sent();
+		if (log.isTraceEnabled()) log.trace("Broker received message '{}' with sentId '{}' in topic '{}:{}'", record.value(), sent, recordMetadata.topic(), record.partition());
 	}
 
 	@Override
 	public void onError(ProducerRecord<Long, String> record, RecordMetadata recordMetadata, Exception ex) {
-		producerMetrics.error();
-		log.error("Failed to send message '{}' to destination '{}': {}", record.value(), record.topic(), ex.getMessage());
+		long error = producerMetrics.error();
+		log.error("Failed to send message '{}' with errorId '{}' to destination '{}:{}': {}", record.value(), error, record.topic(), record.partition(), ex.getMessage());
 		Dish dish = Dish.builder().withId(record.key()).withName(record.value()).withCooked(true).build();
 		dishBackupProvider.send(dish);
 	}

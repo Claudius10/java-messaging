@@ -14,5 +14,5 @@ public interface MessagingManager {
 
 	boolean isConsuming();
 
-	Map<MessagingMetric, Long> getStats();
+	Map<MessagingMetric, Long> getMetrics();
 }

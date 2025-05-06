@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.impl.MockBackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
@@ -54,6 +55,10 @@ public class MyJmsRestaurantPerformanceTests {
 		// RESULTS
 		// 6 threads (3 producers - 3 consumers)
 		// 1) 797.396 in 10 seconds (avg 10 trials)
+		// 2) 746.666 in 10 seconds (avg 20 trials)
+
+		// 4 threads (2 producers - 2 consumers)
+		// 1) 685.234 in 10 seconds (avg 20 trials)
 	}
 
 	void testPerformance(int trials, int maxTestDuration, int threadPairs, int queueCapacity, int dishesToProduce, int producerIdle, int consumerIdle) throws InterruptedException {
@@ -99,13 +104,15 @@ public class MyJmsRestaurantPerformanceTests {
 		JmsPoolConnectionFactory jmsConnectionFactory = (JmsPoolConnectionFactory) connectionFactory;
 		jmsConnectionFactory.setConnectionFactory(new ActiveMQConnectionFactory(jmsProperties.getBrokerUrl(), jmsProperties.getUser(), jmsProperties.getPassword()));
 		jmsConnectionFactory.setMaxConnections(jmsProperties.getMaxConnections()); // only threads for producers, not using consumers for this test
+		ProducerMetrics producerMetrics = new ProducerMetrics();
 
 		MessagingManager myJmsRestaurant = new MyJmsRestaurant(
 				workers,
 				restaurantProperties,
 				jmsProperties,
 				connectionFactory,
-				new MockBackupProvider()
+				new MockBackupProvider(),
+				producerMetrics
 		);
 
 		// Act
@@ -114,6 +121,6 @@ public class MyJmsRestaurantPerformanceTests {
 		Thread.sleep(duration);
 		myJmsRestaurant.close();
 
-		results.add(myJmsRestaurant.getStats().get(MessagingMetric.CONSUMER_OUT));
+		results.add(myJmsRestaurant.getMetrics().get(MessagingMetric.CONSUMER_OUT));
 	}
 }

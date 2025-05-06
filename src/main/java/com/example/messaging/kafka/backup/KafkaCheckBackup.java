@@ -42,8 +42,6 @@ public class KafkaCheckBackup implements BackupCheck {
 			backupProvider.open();
 
 			if (backupProvider.hasMoreElements()) {
-				log.info("Found backed up messages");
-
 				producer = new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
 
 				if (producer.isConnected()) {
@@ -55,8 +53,6 @@ public class KafkaCheckBackup implements BackupCheck {
 						}
 					}
 
-					producer.close();
-
 				} else {
 					log.info("Unable to proceed with backup processing: producer is not connected");
 				}
@@ -66,12 +62,24 @@ public class KafkaCheckBackup implements BackupCheck {
 
 			backupProvider.close();
 			// wait to receive all acks from broker
-			Thread.sleep(10000);
+			final int waitAcks = kafkaProperties.getProducerBlockMs() + 500;
+			Thread.sleep(waitAcks);
+			producer.close();
 			producerMetrics.print();
 		} catch (BackupProcessException ex) {
 			log.error("Backup processing failed {}", ex.getMessage());
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+		} catch (InterruptedException ex) {
+			log.error("Backup processing interrupted {}", ex.getMessage());
+		}
+	}
+
+	private void resend(Dish dish) {
+		try {
+			producer.send(dish);
+			long resent = producerMetrics.resent();
+			if (log.isTraceEnabled()) log.trace("Resent dish '{}' with resentId '{}'", dish.getName(), resent);
+		} catch (Exception ex) {
+			backupProvider.onFailure(dish);
 		}
 	}
 
@@ -85,15 +93,5 @@ public class KafkaCheckBackup implements BackupCheck {
 		}
 
 		return dish;
-	}
-
-	private void resend(Dish dish) {
-		try {
-			if (log.isTraceEnabled()) log.trace("Resending dish {}", dish.getName());
-			producer.send(dish);
-			producerMetrics.resent();
-		} catch (Exception ex) {
-			backupProvider.onFailure(dish);
-		}
 	}
 }

@@ -1,8 +1,10 @@
 package com.example.messaging.jms.controller;
 
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ConsumerMetrics;
+import com.example.messaging.common.metrics.ProducerMetrics;
+import com.example.messaging.jms.backup.JmsCheckBackup;
 import com.example.messaging.jms.consumer.JmsConsumerManager;
-import com.example.messaging.jms.consumer.JmsConsumerMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -23,11 +25,16 @@ public class JmsController {
 
 	private final JmsConsumerManager consumerOperations;
 
-	private final JmsConsumerMetrics metrics;
+	private final ConsumerMetrics consumerMetrics;
+
+	private final ProducerMetrics producerMetrics;
+
+	private final JmsCheckBackup jmsCheckBackup;
 
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
 		log.info("Opening JMS restaurant...");
+		producerMetrics.reset();
 		myJmsRestaurant.open();
 		return ResponseEntity.ok().build();
 	}
@@ -37,6 +44,9 @@ public class JmsController {
 		try {
 			log.info("Closing JMS restaurant...");
 			myJmsRestaurant.close();
+			// wait for last acks before printing
+			Thread.sleep(2500);
+			producerMetrics.print();
 			return ResponseEntity.ok().build();
 		} catch (InterruptedException e) {
 			log.error("Interrupted with closing JMS Restaurant: {}", e.getMessage());
@@ -44,14 +54,20 @@ public class JmsController {
 		}
 	}
 
-	@GetMapping("/producer/stats")
+	@GetMapping("/producer/metrics")
 	public ResponseEntity<?> getProducerStats() {
-		return ResponseEntity.ok().body(myJmsRestaurant.getStats());
+		return ResponseEntity.ok().body(producerMetrics.getMetrics());
+	}
+
+	@PostMapping("/backup")
+	public ResponseEntity<?> checkBackup() {
+		jmsCheckBackup.backupCheck();
+		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/consumer/start")
 	public ResponseEntity<?> startConsumer() {
-		metrics.reset();
+		consumerMetrics.reset();
 		consumerOperations.start();
 		return ResponseEntity.ok("Consumer started");
 	}
@@ -59,8 +75,7 @@ public class JmsController {
 	@PostMapping("/consumer/stop")
 	public ResponseEntity<?> stopConsumer() {
 		consumerOperations.stop();
-		log.info("LISTENER TOTAL {}", metrics.getTotal());
-		log.info("LISTENER CURRENT {}", metrics.getCurrent());
+		consumerMetrics.print();
 		return ResponseEntity.ok("Consumer stopped");
 	}
 
@@ -70,13 +85,8 @@ public class JmsController {
 		return ResponseEntity.ok(running);
 	}
 
-	@GetMapping("/consumer/stats/total")
+	@GetMapping("/consumer/metrics")
 	public ResponseEntity<?> getSConsumerStatsTotal() {
-		return ResponseEntity.ok().body(metrics.getTotal());
-	}
-
-	@GetMapping("/consumer/stats/current")
-	public ResponseEntity<?> getSConsumerStatsCurrent() {
-		return ResponseEntity.ok().body(metrics.getCurrent());
+		return ResponseEntity.ok().body(consumerMetrics.getMetrics());
 	}
 }

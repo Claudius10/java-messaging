@@ -2,6 +2,9 @@
 POST http://localhost:8080/kafka/producer/start
 
 ###
+POST http://localhost:8080/kafka/backup
+
+###
 POST http://localhost:8080/kafka/producer/stop
 
 ###

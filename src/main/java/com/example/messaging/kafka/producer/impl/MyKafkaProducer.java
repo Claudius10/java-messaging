@@ -1,6 +1,5 @@
 package com.example.messaging.kafka.producer.impl;
 
-import com.example.messaging.common.exception.producer.ProducerDeliveryException;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
 import com.example.messaging.kafka.admin.MyKafkaAdmin;
@@ -25,7 +24,7 @@ public class MyKafkaProducer implements Producer<Dish> {
 	private CompletableFuture<SendResult<Long, String>> pending;
 
 	@Override
-	public void send(Dish dish) throws ProducerDeliveryException {
+	public void send(Dish dish) {
 		Long id = dish.getId();
 		String content = dish.getName();
 

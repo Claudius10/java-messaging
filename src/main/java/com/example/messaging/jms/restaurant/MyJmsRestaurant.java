@@ -4,6 +4,7 @@ import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.customer.impl.MyRestaurantCustomer;
 import com.example.messaging.common.manager.BaseMessagingManager;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
 import com.example.messaging.common.producer.impl.NoopProducer;
@@ -13,6 +14,7 @@ import com.example.messaging.common.task.restaurant.ServerTask;
 import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
+import com.example.messaging.jms.listener.MyCompletionListener;
 import com.example.messaging.jms.producer.impl.MyJmsProducer;
 import jakarta.jms.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,8 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 	private final ConnectionFactory connectionFactory;
 
 	private final BackupProvider<Dish> dishBackupProvider;
+
+	private final ProducerMetrics producerMetrics;
 
 	private BlockingQueue<Dish> dishesQueue;
 
@@ -95,7 +99,7 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 			return new NoopProducer();
 		}
 
-		return new MyJmsProducer(connectionFactory, jmsProperties);
+		return new MyJmsProducer(connectionFactory, jmsProperties, producerMetrics, new MyCompletionListener(dishBackupProvider, producerMetrics));
 	}
 
 	@Override
@@ -109,7 +113,7 @@ public class MyJmsRestaurant extends BaseMessagingManager implements MessagingMa
 	}
 
 	@Override
-	public Map<MessagingMetric, Long> getStats() {
-		return super.getStats();
+	public Map<MessagingMetric, Long> getMetrics() {
+		return super.getMetrics();
 	}
 }

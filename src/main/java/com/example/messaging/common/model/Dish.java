@@ -1,12 +1,10 @@
 package com.example.messaging.common.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Builder(setterPrefix = "with")
 @AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 public class Dish {

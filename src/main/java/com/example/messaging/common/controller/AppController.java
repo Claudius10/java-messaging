@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +45,11 @@ public class AppController {
 		log.info("Shutting down in 5 seconds...");
 		scheduler.schedule(this::shutdown, Instant.now().plusSeconds(5));
 		return ResponseEntity.ok().body("Shutting down in 5 seconds...");
+	}
+
+	@GetMapping("/metrics")
+	public ResponseEntity<?> getMetrics() {
+		return ResponseEntity.ok().body(restaurant.getMetrics());
 	}
 
 	private void shutdown() {

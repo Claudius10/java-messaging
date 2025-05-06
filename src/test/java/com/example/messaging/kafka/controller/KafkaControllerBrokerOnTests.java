@@ -3,6 +3,7 @@ package com.example.messaging.kafka.controller;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.util.ConsumerMetric;
+import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.ProducerMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.kafka.config.KafkaProperties;
@@ -109,26 +110,37 @@ public class KafkaControllerBrokerOnTests {
 		MockHttpServletResponse consumerRunningTwo = mockMvc.perform(get("/kafka/consumer/alive")).andReturn().getResponse();
 		assertThat(consumerRunningTwo.getContentAsString()).isEqualTo("false");
 
-		// get consumer stats
+		// get consumer metrics
 		MockHttpServletResponse consumerStats = mockMvc.perform(get("/kafka/consumer/metrics")).andReturn().getResponse();
 		assertThat(consumerStats.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map consumerMetrics = objectMapper.readValue(consumerStats.getContentAsString(), Map.class);
 
-		// get producer stats
+		// get producer metrics
 		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/kafka/producer/metrics")).andReturn().getResponse();
 		assertThat(producerStatsResponse.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map producerMetrics = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
+
+		// get restaurant metrics
+		MockHttpServletResponse restaurantMetrics = mockMvc.perform(get("/metrics")).andReturn().getResponse();
+		assertThat(restaurantMetrics.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map restaurant = objectMapper.readValue(restaurantMetrics.getContentAsString(), Map.class);
+
+		int consumerIn = (int) restaurant.get(MessagingMetric.CONSUMER_IN.toString());
+		int consumerOut = (int) restaurant.get(MessagingMetric.CONSUMER_OUT.toString());
+		int producerIn = (int) restaurant.get(MessagingMetric.PRODUCER_IN.toString());
+		int producerOut = (int) restaurant.get(MessagingMetric.PRODUCER_OUT.toString());
 
 		// Assert
 
 		final int expected = restaurantProperties.getDishesToProduce() * restaurantProperties.getMaxConnections();
 
-		// assert producer stats
-		Map producerMetrics = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
+		assertThat(consumerIn).isEqualTo(expected);
+		assertThat(consumerOut).isEqualTo(expected);
+		assertThat(producerIn).isEqualTo(expected);
+		assertThat(producerOut).isEqualTo(expected);
 		assertThat(producerMetrics.get(ProducerMetric.SENT.toString())).isEqualTo(expected);
-		assertThat(producerMetrics.get(ProducerMetric.ERROR.toString())).isEqualTo(0);
-
-		// assert consumer stats
-		Map consumerMetrics = objectMapper.readValue(consumerStats.getContentAsString(), Map.class);
 		assertThat(consumerMetrics.get(ConsumerMetric.CURRENT.toString())).isEqualTo(expected);
+		assertThat(producerMetrics.get(ProducerMetric.ERROR.toString())).isEqualTo(0);
 	}
 
 	@TestConfiguration

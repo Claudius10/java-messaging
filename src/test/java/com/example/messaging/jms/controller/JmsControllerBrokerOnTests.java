@@ -2,7 +2,9 @@ package com.example.messaging.jms.controller;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.example.messaging.common.util.ConsumerMetric;
 import com.example.messaging.common.util.MessagingMetric;
+import com.example.messaging.common.util.ProducerMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -96,27 +98,37 @@ public class JmsControllerBrokerOnTests {
 		MockHttpServletResponse consumerRunningTwo = mockMvc.perform(get("/jms/consumer/alive")).andReturn().getResponse();
 		assertThat(consumerRunningTwo.getContentAsString()).isEqualTo("false");
 
-		// get consumer stats
-		MockHttpServletResponse consumerStats = mockMvc.perform(get("/jms/consumer/stats/current")).andReturn().getResponse();
+		// get consumer metrics
+		MockHttpServletResponse consumerStats = mockMvc.perform(get("/jms/consumer/metrics")).andReturn().getResponse();
 		assertThat(consumerStats.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map consumerMetrics = objectMapper.readValue(consumerStats.getContentAsString(), Map.class);
 
-		// get producer stats
-		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/jms/producer/stats")).andReturn().getResponse();
+		// get producer metrics
+		MockHttpServletResponse producerStatsResponse = mockMvc.perform(get("/jms/producer/metrics")).andReturn().getResponse();
 		assertThat(producerStatsResponse.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map producerMetrics = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
+
+		// get restaurant metrics
+		MockHttpServletResponse restaurantMetrics = mockMvc.perform(get("/metrics")).andReturn().getResponse();
+		assertThat(restaurantMetrics.getStatus()).isEqualTo(HttpStatus.OK.value());
+		Map restaurant = objectMapper.readValue(restaurantMetrics.getContentAsString(), Map.class);
+
+		int consumerIn = (int) restaurant.get(MessagingMetric.CONSUMER_IN.toString());
+		int consumerOut = (int) restaurant.get(MessagingMetric.CONSUMER_OUT.toString());
+		int producerIn = (int) restaurant.get(MessagingMetric.PRODUCER_IN.toString());
+		int producerOut = (int) restaurant.get(MessagingMetric.PRODUCER_OUT.toString());
 
 		// Assert
 
 		final int expected = restaurantProperties.getDishesToProduce() * restaurantProperties.getMaxConnections();
 
-		// assert producer stats
-		Map stats = objectMapper.readValue(producerStatsResponse.getContentAsString(), Map.class);
-		assertThat(stats.get(MessagingMetric.PRODUCER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingMetric.CONSUMER_IN.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingMetric.PRODUCER_OUT.toString())).isEqualTo(expected);
-		assertThat(stats.get(MessagingMetric.CONSUMER_OUT.toString())).isEqualTo(expected);
-
-		// assert consumer stats
-		assertThat(Integer.valueOf(consumerStats.getContentAsString())).isEqualTo(expected);
+		assertThat(consumerIn).isEqualTo(expected);
+		assertThat(consumerOut).isEqualTo(expected);
+		assertThat(producerIn).isEqualTo(expected);
+		assertThat(producerOut).isEqualTo(expected);
+		assertThat(producerMetrics.get(ProducerMetric.SENT.toString())).isEqualTo(expected);
+		assertThat(consumerMetrics.get(ConsumerMetric.CURRENT.toString())).isEqualTo(expected);
+		assertThat(producerMetrics.get(ProducerMetric.ERROR.toString())).isEqualTo(0);
 	}
 
 	@TestConfiguration

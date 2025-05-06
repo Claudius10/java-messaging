@@ -3,10 +3,10 @@ package com.example.messaging.jms.producer.impl;
 import com.example.messaging.common.exception.producer.ProducerClosedException;
 import com.example.messaging.common.exception.producer.ProducerDeliveryException;
 import com.example.messaging.common.exception.producer.ProducerSendException;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
 import com.example.messaging.jms.config.JmsProperties;
-import com.example.messaging.jms.listener.MyCompletionListener;
 import com.example.messaging.jms.util.MessageType;
 import jakarta.jms.*;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,10 @@ public class MyJmsProducer implements Producer<Dish> {
 
 	private final JmsProperties jmsProperties;
 
+	private final ProducerMetrics producerMetrics;
+
+	private final CompletionListener completionListener;
+
 	private JMSContext jmsContext;
 
 	private JMSProducer jmsProducer;
@@ -36,11 +40,25 @@ public class MyJmsProducer implements Producer<Dish> {
 	private long timeOfLastConnect = 0;
 
 	@Override
-	public void send(Dish dish) throws ProducerDeliveryException {
-		checkOpen();
-		Message message = createMessage(dish, MessageType.TEXT);
-		setProperty(message, "id", currentMessage);
-		doSend(message);
+	public void send(Dish dish) {
+		try {
+			checkOpen();
+			Message message = createMessage(dish, MessageType.TEXT);
+			setProperty(message, "id", currentMessage);
+			doSend(message);
+		} catch (ProducerDeliveryException ex) {
+			producerMetrics.error();
+			log.error("Failed to send message {}", ex.getMessage());
+			throw ex;
+		}
+	}
+
+	private void checkOpen() {
+		try {
+			open();
+		} catch (JMSRuntimeException ex) {
+			throw new ProducerClosedException(String.format("Failed to connect to JMS broker: %s", ex.getMessage()));
+		}
 	}
 
 	private Message createMessage(Dish dish, MessageType type) {
@@ -59,9 +77,8 @@ public class MyJmsProducer implements Producer<Dish> {
 					return jmsContext.createTextMessage(content);
 			}
 		} catch (Exception ex) {
-			log.error("Failed to create message '{}' with 'id' {}: {}", content, currentMessage, ex.getMessage());
 			reconnectIfNecessary(ex);
-			throw new ProducerDeliveryException();
+			throw new ProducerDeliveryException(String.format("Failed to create message '%s' with id '%s': %s", content, currentMessage, ex.getMessage()));
 		}
 	}
 
@@ -71,51 +88,18 @@ public class MyJmsProducer implements Producer<Dish> {
 		}
 
 		try {
-			if (value instanceof String) {
-				message.setStringProperty(name, (String) value);
-			}
-
-			if (value instanceof Long) {
-				message.setLongProperty(name, (Long) value);
-			}
-
-			if (value instanceof Double) {
-				message.setDoubleProperty(name, (Double) value);
-			}
+			message.setStringProperty(name, value.toString());
 		} catch (Exception ex) {
-			log.error("Failed to add property name '{}' and value '{}' to message '{}': {}", name, value, currentMessage, ex.getMessage());
-			throw new ProducerDeliveryException();
+			throw new ProducerDeliveryException(String.format("Failed to add property name '%s' and value '%s' to message '%s': %s", name, value, currentMessage, ex.getMessage()));
 		}
 	}
 
 	private void doSend(Message message) {
 		try {
 			jmsProducer.send(destination, message);
-			if (log.isTraceEnabled()) log.trace("Sent message '{}' to destination '{}'", currentMessage, destination);
 		} catch (Exception ex) {
-			log.error("Failed to send message '{}' to destination '{}': {}", message, destination, ex.getMessage());
 			reconnectIfNecessary(ex);
-			throw new ProducerSendException();
-		}
-	}
-
-	private void reconnectIfNecessary(Exception ex) {
-		if (ex instanceof IllegalStateRuntimeException) {
-			close();
-		}
-	}
-
-	private boolean openAllowed() {
-		long elapsed = System.currentTimeMillis() - timeOfLastConnect;
-		return elapsed > jmsProperties.getReconnectionIntervalMs();
-	}
-
-	private void checkOpen() {
-		try {
-			open();
-		} catch (JMSRuntimeException ex) {
-			log.error("Failed to connect to JMS broker: {}", ex.getMessage());
-			throw new ProducerClosedException();
+			throw new ProducerSendException(String.format("Failed to send message '%s' to destination '%s': %s", message, destination, ex.getMessage()));
 		}
 	}
 
@@ -135,12 +119,23 @@ public class MyJmsProducer implements Producer<Dish> {
 
 			jmsProducer = jmsContext.createProducer();
 			jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
-			jmsProducer.setAsync(new MyCompletionListener());
+			jmsProducer.setAsync(completionListener);
 
 			destination = jmsProperties.getDestination().contains("queue") ? jmsContext.createQueue(jmsProperties.getDestination()) : jmsContext.createTopic(jmsProperties.getDestination());
 
 			open = true;
 			if (log.isTraceEnabled()) log.trace("Connected to JMS broker!");
+		}
+	}
+
+	private boolean openAllowed() {
+		long elapsed = System.currentTimeMillis() - timeOfLastConnect;
+		return elapsed > jmsProperties.getReconnectionIntervalMs();
+	}
+
+	private void reconnectIfNecessary(Exception ex) {
+		if (ex instanceof IllegalStateRuntimeException) {
+			close();
 		}
 	}
 

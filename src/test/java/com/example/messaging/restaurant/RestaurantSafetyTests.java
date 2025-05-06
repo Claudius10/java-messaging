@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.example.messaging.common.backup.BackupProvider;
 import com.example.messaging.common.manager.MessagingManager;
+import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
 import com.example.messaging.jms.config.JmsProperties;
@@ -78,20 +79,22 @@ public class RestaurantSafetyTests {
 
 		ConnectionFactory jmsConnectionFactory = mock(ConnectionFactory.class);
 		BackupProvider backupProvider = mock(BackupProvider.class);
+		ProducerMetrics producerMetrics = new ProducerMetrics();
 
 		MessagingManager myJmsRestaurant = new MyJmsRestaurant(
 				workers,
 				restaurantProperties,
 				jmsProperties,
 				jmsConnectionFactory,
-				backupProvider
+				backupProvider,
+				producerMetrics
 		);
 
 		// Act
 
 		myJmsRestaurant.open();
 		Thread.sleep(duration);
-		Map<MessagingMetric, Long> stats = myJmsRestaurant.getStats();
+		Map<MessagingMetric, Long> stats = myJmsRestaurant.getMetrics();
 		myJmsRestaurant.close();
 
 		// Assert

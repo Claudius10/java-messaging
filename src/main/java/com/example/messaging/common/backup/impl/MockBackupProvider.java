@@ -16,6 +16,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 	@Override
 	public void open() {
 		if (log.isTraceEnabled()) log.trace("Opening backup provider...");
+		if (log.isTraceEnabled()) log.trace("Found {} backed up dishes", count.get());
 	}
 
 	@Override
@@ -29,7 +30,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 	}
 
 	@Override
-	public void send(Dish dish) {
+	public synchronized void send(Dish dish) {
 		checkOpen();
 		count.getAndIncrement();
 		log.warn("Backed up dish {}", dish.getName());
@@ -37,9 +38,8 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public Dish read() {
-		Dish dish = Dish.builder().withId(count.get()).withCooked(true).withName("Delicious dish " + count.get()).build();
-		count.decrementAndGet();
-		return dish;
+		long countId = count.getAndDecrement();
+		return Dish.builder().withId(countId).withCooked(true).withName("Delicious dish " + countId).build();
 	}
 
 	@Override

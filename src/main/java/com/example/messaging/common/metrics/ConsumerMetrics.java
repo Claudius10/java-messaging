@@ -17,8 +17,8 @@ public class ConsumerMetrics {
 	private final AtomicLong current = new AtomicLong(0);
 
 	public void increment() {
-		current.incrementAndGet();
-		total.incrementAndGet();
+		current.getAndIncrement();
+		total.getAndIncrement();
 	}
 
 	public Map<ConsumerMetric, Long> getMetrics() {

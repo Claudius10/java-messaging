@@ -112,7 +112,7 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 	}
 
 	@Override
-	public Map<MessagingMetric, Long> getStats() {
-		return super.getStats();
+	public Map<MessagingMetric, Long> getMetrics() {
+		return super.getMetrics();
 	}
 }

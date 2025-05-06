@@ -3,6 +3,7 @@ package com.example.messaging.kafka.controller;
 import com.example.messaging.common.manager.MessagingManager;
 import com.example.messaging.common.metrics.ConsumerMetrics;
 import com.example.messaging.common.metrics.ProducerMetrics;
+import com.example.messaging.kafka.backup.KafkaCheckBackup;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.consumer.KafkaConsumerManager;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,8 @@ public class KafkaController {
 
 	private final ProducerMetrics producerMetrics;
 
+	private final KafkaCheckBackup kafkaCheckBackup;
+
 	@PostMapping("/producer/start")
 	public ResponseEntity<?> startProducer() {
 		log.info("Opening Kafka restaurant...");
@@ -45,6 +48,8 @@ public class KafkaController {
 		try {
 			log.info("Closing Kafka restaurant...");
 			myKafkaRestaurant.close();
+			// wait for last acks before printing
+			Thread.sleep(2500);
 			producerMetrics.print();
 			return ResponseEntity.ok().build();
 		} catch (InterruptedException e) {
@@ -56,6 +61,12 @@ public class KafkaController {
 	@GetMapping("/producer/metrics")
 	public ResponseEntity<?> getStats() {
 		return ResponseEntity.ok().body(producerMetrics.getMetrics());
+	}
+
+	@PostMapping("/backup")
+	public ResponseEntity<?> checkBackup() {
+		kafkaCheckBackup.backupCheck();
+		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/consumer/start")

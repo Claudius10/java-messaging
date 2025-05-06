@@ -12,31 +12,26 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class ProducerMetrics {
 
-	private final AtomicLong total = new AtomicLong(0);
-
 	private final AtomicLong sent = new AtomicLong(0);
 
 	private final AtomicLong error = new AtomicLong(0);
 
 	private final AtomicLong resent = new AtomicLong(0);
 
-	public void sent() {
-		sent.incrementAndGet();
-		total.incrementAndGet();
+	public long sent() {
+		return sent.getAndIncrement();
 	}
 
-	public void error() {
-		error.incrementAndGet();
-		total.incrementAndGet();
+	public long error() {
+		return error.getAndIncrement();
 	}
 
-	public void resent() {
-		resent.incrementAndGet();
+	public long resent() {
+		return resent.getAndIncrement();
 	}
 
 	public Map<ProducerMetric, Long> getMetrics() {
 		Map<ProducerMetric, Long> metrics = new HashMap<>();
-		metrics.put(ProducerMetric.TOTAL, total.get());
 		metrics.put(ProducerMetric.SENT, sent.get());
 		metrics.put(ProducerMetric.ERROR, error.get());
 		metrics.put(ProducerMetric.RESENT, resent.get());

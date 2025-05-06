@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class BaseMessagingManager {
 
-	protected final Map<MessagingMetric, Long> stats = new HashMap<>();
+	protected final Map<MessagingMetric, Long> metrics = new HashMap<>();
 
 	protected CountDownLatch startGate;
 
@@ -47,46 +47,46 @@ public abstract class BaseMessagingManager {
 		log.info("Stopping workers...");
 		Stream.concat(producerTasks.stream(), consumerTasks.stream()).forEach(Task::cancel);
 		endGate.await();
-		printStats();
+		printMetrics();
 		producerTasks.clear();
 		consumerTasks.clear();
 	}
 
-	private void printStats() {
-		collectStats();
+	private void printMetrics() {
+		collectMetrics();
 
 		for (int i = 0; i < producerTasks.size(); i++) {
 			MessagingTask task = producerTasks.get(i);
-			log.info("PRODUCER {} IN {}", i, task.getInCount());
-			log.info("PRODUCER {} OUT {}", i, task.getOutCount());
+			log.info("PRODUCER-{} IN: {}", i, task.getInCount());
+			log.info("PRODUCER-{} OUT: {}", i, task.getOutCount());
 		}
 
 		for (int i = 0; i < consumerTasks.size(); i++) {
 			MessagingTask task = consumerTasks.get(i);
-			log.info("CONSUMER {} IN {}", i, task.getInCount());
-			log.info("CONSUMER {} OUT {}", i, task.getOutCount());
+			log.info("CONSUMER-{} IN: {}", i, task.getInCount());
+			log.info("CONSUMER-{} OUT: {}", i, task.getOutCount());
 		}
 
-		stats.forEach((stat, count) -> log.info("TOTAL {} - {}", stat, count));
+		metrics.forEach((stat, count) -> log.info("TOTAL {}: {}", stat, count));
 	}
 
-	private void collectStats() {
+	private void collectMetrics() {
 		if ((producerTasks != null && !producerTasks.isEmpty()) && (consumerTasks != null && !consumerTasks.isEmpty())) {
 			long producerIn = producerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
 			long consumerIn = consumerTasks.stream().map(MessagingTask::getInCount).reduce(0L, Long::sum);
 			long producerOut = producerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
 			long consumerOut = consumerTasks.stream().map(MessagingTask::getOutCount).reduce(0L, Long::sum);
 
-			stats.put(MessagingMetric.PRODUCER_IN, producerIn);
-			stats.put(MessagingMetric.CONSUMER_IN, consumerIn);
-			stats.put(MessagingMetric.PRODUCER_OUT, producerOut);
-			stats.put(MessagingMetric.CONSUMER_OUT, consumerOut);
+			metrics.put(MessagingMetric.PRODUCER_IN, producerIn);
+			metrics.put(MessagingMetric.CONSUMER_IN, consumerIn);
+			metrics.put(MessagingMetric.PRODUCER_OUT, producerOut);
+			metrics.put(MessagingMetric.CONSUMER_OUT, consumerOut);
 		}
 	}
 
-	protected Map<MessagingMetric, Long> getStats() {
-		collectStats();
-		return stats;
+	protected Map<MessagingMetric, Long> getMetrics() {
+		collectMetrics();
+		return metrics;
 	}
 
 	public boolean isProducing() {
