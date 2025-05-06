@@ -2,7 +2,6 @@ package com.example.messaging.jms.backup;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.example.messaging.common.backup.BackupCheck;
 import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.ProducerMetric;
 import com.fasterxml.jackson.databind.ObjectMapper;
