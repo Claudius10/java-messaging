@@ -30,7 +30,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 	}
 
 	@Override
-	public synchronized void send(Dish dish) {
+	public void send(Dish dish) {
 		checkOpen();
 		count.getAndIncrement();
 		log.warn("Backed up dish {}", dish.getName());
