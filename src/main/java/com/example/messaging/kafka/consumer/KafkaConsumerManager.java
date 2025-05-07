@@ -15,11 +15,12 @@ public class KafkaConsumerManager {
 	private final KafkaListenerEndpointRegistry registry;
 
 	public void start(String id) {
-		log.info("Starting Kafka consumer {}", id);
+		log.info("Starting Kafka consumer '{}'", id);
 		registry.getListenerContainer(id).start();
 	}
 
 	public void stop(String id) {
+		log.info("Stopping Kafka consumer '{}'", id);
 		registry.getListenerContainer(id).stop();
 	}
 
