@@ -48,12 +48,10 @@ public class KafkaController {
 		try {
 			log.info("Closing Kafka restaurant...");
 			myKafkaRestaurant.close();
-			// wait for last acks before printing
-			Thread.sleep(2500);
 			producerMetrics.print();
 			return ResponseEntity.ok().build();
 		} catch (InterruptedException e) {
-			log.error("Interrupted with closing Kafka Restaurant: {}", e.getMessage());
+			log.error("Interrupted with closing Kafka Restaurant: '{}'", e.getMessage());
 			return ResponseEntity.internalServerError().body(e.getMessage());
 		}
 	}

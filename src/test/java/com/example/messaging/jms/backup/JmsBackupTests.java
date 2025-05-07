@@ -98,7 +98,7 @@ public class JmsBackupTests {
 
 		// backup check
 		MockHttpServletResponse backupCheck = mockMvc.perform(post("/jms/backup")).andReturn().getResponse();
-		assertThat(backupCheck .getStatus()).isEqualTo(HttpStatus.OK.value());
+		assertThat(backupCheck.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		// Assert
 
@@ -121,15 +121,13 @@ public class JmsBackupTests {
 		int resentTwo = (int) statsTwo.get(ProducerMetric.RESENT.toString());
 		int sentTwo = (int) statsTwo.get(ProducerMetric.SENT.toString());
 
-		final int sentMinusTestRequest = sentTwo - 1; // jms checks whatever broker is online by sending a test request
-
 		assertThat(resentTwo).isEqualTo(errorTwo);
-		assertThat(resentTwo).isEqualTo(sentMinusTestRequest);
+		assertThat(resentTwo).isEqualTo(sentTwo);
 
-		assertThat(sentMinusTestRequest).isEqualTo(consumerInTwo);
-		assertThat(sentMinusTestRequest).isEqualTo(consumerOutTwo);
-		assertThat(sentMinusTestRequest).isEqualTo(producerInTwo);
-		assertThat(sentMinusTestRequest).isEqualTo(producerOutTwo);
+		assertThat(sentTwo).isEqualTo(consumerInTwo);
+		assertThat(sentTwo).isEqualTo(consumerOutTwo);
+		assertThat(sentTwo).isEqualTo(producerInTwo);
+		assertThat(sentTwo).isEqualTo(producerOutTwo);
 
 		log.info("Stopping broker");
 		artemis.stop();
@@ -201,7 +199,7 @@ public class JmsBackupTests {
 
 		// backup check
 		MockHttpServletResponse backupCheck = mockMvc.perform(post("/jms/backup")).andReturn().getResponse();
-		assertThat(backupCheck .getStatus()).isEqualTo(HttpStatus.OK.value());
+		assertThat(backupCheck.getStatus()).isEqualTo(HttpStatus.OK.value());
 
 		// Assert
 
@@ -224,20 +222,18 @@ public class JmsBackupTests {
 		int resentTwo = (int) producerTwo.get(ProducerMetric.RESENT.toString());
 		int sentTwo = (int) producerTwo.get(ProducerMetric.SENT.toString());
 
-		final int sentTwoMinusTestRequest = sentTwo - 1;
-
 		assertThat(resentTwo).isGreaterThan(0);
 		assertThat(errorTwo).isGreaterThan(0);
-		assertThat(sentTwoMinusTestRequest).isGreaterThan(0);
+		assertThat(sentTwo).isGreaterThan(0);
 
 		assertThat(resentTwo).isEqualTo(errorTwo);
 
-		assertThat(sentTwoMinusTestRequest).isGreaterThan(resentTwo);
+		assertThat(sentTwo).isGreaterThan(resentTwo);
 
-		assertThat(sentTwoMinusTestRequest).isEqualTo(consumerInTwo);
-		assertThat(sentTwoMinusTestRequest).isEqualTo(consumerOutTwo);
-		assertThat(sentTwoMinusTestRequest).isEqualTo(producerInTwo);
-		assertThat(sentTwoMinusTestRequest).isEqualTo(producerOutTwo);
+		assertThat(sentTwo).isEqualTo(consumerInTwo);
+		assertThat(sentTwo).isEqualTo(consumerOutTwo);
+		assertThat(sentTwo).isEqualTo(producerInTwo);
+		assertThat(sentTwo).isEqualTo(producerOutTwo);
 
 		log.trace("Stopping broker - end");
 		artemis.stop();

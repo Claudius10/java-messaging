@@ -85,7 +85,7 @@ public class ChefTask implements MessagingTask {
 	private void cook(Dish dish) throws InterruptedException {
 		dish.setCooked(true);
 		completedDishes.put(dish);
-		if (log.isTraceEnabled()) log.trace("Chef cooked dish {}", dish.getName());
+		if (log.isTraceEnabled()) log.trace("Chef cooked 'dish' {}", dish.getName());
 	}
 
 	private void handleIdle() {

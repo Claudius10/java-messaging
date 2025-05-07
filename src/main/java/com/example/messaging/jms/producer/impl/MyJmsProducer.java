@@ -6,12 +6,15 @@ import com.example.messaging.common.exception.producer.ProducerSendException;
 import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
+import com.example.messaging.common.util.Constants;
 import com.example.messaging.jms.config.JmsProperties;
 import com.example.messaging.jms.util.MessageType;
 import jakarta.jms.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQTopic;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -48,7 +51,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			doSend(message);
 		} catch (ProducerDeliveryException ex) {
 			producerMetrics.error();
-			log.error("Failed to send message {}", ex.getMessage());
+			log.error("Failed to send message: '{}'", ex.getMessage());
 			throw ex;
 		}
 	}
@@ -57,7 +60,8 @@ public class MyJmsProducer implements Producer<Dish> {
 		try {
 			open();
 		} catch (JMSRuntimeException ex) {
-			throw new ProducerClosedException(String.format("Failed to connect to JMS broker: %s", ex.getMessage()));
+			String message = String.format("Failed to connect to JMS broker: '%s'", ex.getMessage());
+			throw new ProducerClosedException(message);
 		}
 	}
 
@@ -78,7 +82,8 @@ public class MyJmsProducer implements Producer<Dish> {
 			}
 		} catch (Exception ex) {
 			reconnectIfNecessary(ex);
-			throw new ProducerDeliveryException(String.format("Failed to create message '%s' with id '%s': %s", content, currentMessage, ex.getMessage()));
+			String message = String.format("Failed to create message '%s' with id '%s': '%s'", content, currentMessage, ex.getMessage());
+			throw new ProducerDeliveryException(message);
 		}
 	}
 
@@ -90,7 +95,8 @@ public class MyJmsProducer implements Producer<Dish> {
 		try {
 			message.setStringProperty(name, value.toString());
 		} catch (Exception ex) {
-			throw new ProducerDeliveryException(String.format("Failed to add property name '%s' and value '%s' to message '%s': %s", name, value, currentMessage, ex.getMessage()));
+			String errorMessage = String.format("Failed to add property name '%s' and value '%s' to message '%s': '%s'", name, value, currentMessage, ex.getMessage());
+			throw new ProducerDeliveryException(errorMessage);
 		}
 	}
 
@@ -99,7 +105,8 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsProducer.send(destination, message);
 		} catch (Exception ex) {
 			reconnectIfNecessary(ex);
-			throw new ProducerSendException(String.format("Failed to send message '%s' to destination '%s': %s", message, destination, ex.getMessage()));
+			String errorMessage = String.format("Failed to send message '%s' to destination '%s': '%s'", message, destination, ex.getMessage());
+			throw new ProducerSendException(errorMessage);
 		}
 	}
 
@@ -108,7 +115,9 @@ public class MyJmsProducer implements Producer<Dish> {
 
 			if (!openAllowed()) {
 				// if not within connect/reconnect interval, throw to return and immediately back up message
-				throw new ProducerClosedException();
+				String message = String.format("Producer is disconnected, waiting for reconnection interval: %s seconds remaining",
+						TimeUnit.MILLISECONDS.toSeconds(jmsProperties.getReconnectionIntervalMs() - getTimeElapsedSinceLastConnect()));
+				throw new ProducerClosedException(message);
 			}
 
 			timeOfLastConnect = System.currentTimeMillis();
@@ -124,13 +133,47 @@ public class MyJmsProducer implements Producer<Dish> {
 			destination = jmsProperties.getDestination().contains("queue") ? jmsContext.createQueue(jmsProperties.getDestination()) : jmsContext.createTopic(jmsProperties.getDestination());
 
 			open = true;
-			if (log.isTraceEnabled()) log.trace("Connected to JMS broker!");
+			if (log.isTraceEnabled()) log.trace("Connected to JMS broker");
 		}
 	}
 
-	private boolean openAllowed() {
-		long elapsed = System.currentTimeMillis() - timeOfLastConnect;
-		return elapsed > jmsProperties.getReconnectionIntervalMs();
+	@Override
+	public void close() {
+		if (open) {
+			try {
+				// wait for last acks
+				Thread.sleep(2500);
+				closeProducer();
+			} catch (InterruptedException ex) {
+				log.error("Interrupted while waiting for ack before closing producer: '{}'", ex.getMessage());
+				closeProducer();
+			}
+			open = false;
+		}
+	}
+
+	private void closeProducer() {
+		try {
+			if (log.isTraceEnabled()) log.trace("Closing JMS producer...");
+			jmsContext.close();
+			if (log.isTraceEnabled()) log.trace("JMS producer disconnected");
+		} catch (JMSRuntimeException ex) {
+			log.warn("Failed to gracefully close connection: '{}'", ex.getMessage());
+			this.jmsContext = null;
+			this.jmsProducer = null;
+		}
+	}
+
+	@Override
+	public boolean isConnected() {
+		try {
+			checkOpen();
+			jmsProducer.send(TEST_DESTINATION, Constants.TEST_REQUEST);
+			return true;
+		} catch (Exception ex) {
+			reconnectIfNecessary(ex);
+			return false;
+		}
 	}
 
 	private void reconnectIfNecessary(Exception ex) {
@@ -139,31 +182,11 @@ public class MyJmsProducer implements Producer<Dish> {
 		}
 	}
 
-	@Override
-	public void close() {
-		if (open) {
-			try {
-				if (log.isTraceEnabled()) log.trace("Closing JMS producer...");
-				jmsContext.close();
-				if (log.isTraceEnabled()) log.trace("JMS producer disconnected");
-			} catch (JMSRuntimeException ex) {
-				log.warn("Failed to gracefully close connection: {}", ex.getMessage());
-				this.jmsContext = null;
-				this.jmsProducer = null;
-			}
-			open = false;
-		}
+	private boolean openAllowed() {
+		return getTimeElapsedSinceLastConnect() > jmsProperties.getReconnectionIntervalMs();
 	}
 
-	@Override
-	public boolean isConnected() {
-		try {
-			checkOpen();
-			jmsProducer.send(TEST_DESTINATION, "TEST_REQUEST");
-			return true;
-		} catch (Exception ex) {
-			reconnectIfNecessary(ex);
-			return false;
-		}
+	private long getTimeElapsedSinceLastConnect() {
+		return System.currentTimeMillis() - timeOfLastConnect;
 	}
 }

@@ -17,7 +17,7 @@ public class JmsConsumer {
 
 	@JmsListener(destination = "${jms.destination}", concurrency = "${jms.max-connections}")
 	public void receive(String content) {
-		if (log.isTraceEnabled()) log.trace("Received message: {}", content);
+		if (log.isTraceEnabled()) log.trace("Received message: '{}'", content);
 		metrics.increment();
 	}
 }

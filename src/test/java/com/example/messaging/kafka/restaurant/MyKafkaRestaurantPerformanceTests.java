@@ -9,7 +9,6 @@ import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.util.ProducerMetric;
 import com.example.messaging.common.util.RestaurantProperties;
-import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.listener.MyProducerListener;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -53,7 +51,7 @@ public class MyKafkaRestaurantPerformanceTests {
 
 		int threadPairs = 3; // affects performance
 		int queueCapacity = 100; // affects performance
-		int trials = 3;
+		int trials = 1;
 		int maxTestDurationMs = 10000; // ms
 		int dishesToProduce = 10000; // affects performance
 		int producerIdle = 0; // ms
@@ -116,8 +114,6 @@ public class MyKafkaRestaurantPerformanceTests {
 		ProducerFactory<Long, String> producerFactory = producerFactory(kafkaProperties);
 
 		KafkaTemplate<Long, String> kafkaTemplate = new KafkaTemplate<>(producerFactory);
-		KafkaAdmin kafkaAdmin = kafkaTemplate.getKafkaAdmin();
-		MyKafkaAdmin myKafkaAdmin = new MyKafkaAdmin(kafkaAdmin);
 		BackupProvider<Dish> backupProvider = new MockBackupProvider();
 		ProducerMetrics producerMetrics = new ProducerMetrics();
 		kafkaTemplate.setProducerListener(new MyProducerListener(backupProvider, producerMetrics));
@@ -127,7 +123,6 @@ public class MyKafkaRestaurantPerformanceTests {
 				restaurantProperties,
 				kafkaProperties,
 				kafkaTemplate,
-				myKafkaAdmin,
 				backupProvider
 		);
 

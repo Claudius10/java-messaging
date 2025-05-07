@@ -2,6 +2,9 @@
 POST http://localhost:8080/jms/producer/start
 
 ###
+POST http://localhost:8080/jms/backup
+
+###
 POST http://localhost:8080/jms/producer/stop
 
 ###

@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MyExceptionListener implements ExceptionListener {
 
 	@Override
-	public void onException(JMSException exception) {
-		log.error("Listener error", exception);
+	public void onException(JMSException ex) {
+		log.error("Connection error: '{}'", ex.getMessage());
 	}
 }

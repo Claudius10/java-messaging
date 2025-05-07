@@ -44,7 +44,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 
 	@Override
 	public void onFailure(Dish dish) {
-		log.error("Failed to resend dish {}", dish.getName());
+		log.error("Failed to resend dish '{}'", dish.getName());
 	}
 
 	private void checkOpen() {

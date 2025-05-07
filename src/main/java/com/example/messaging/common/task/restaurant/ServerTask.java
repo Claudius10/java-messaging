@@ -82,7 +82,7 @@ public class ServerTask implements MessagingTask {
 	}
 
 	private void serve(Dish dish) throws InterruptedException {
-		if (log.isTraceEnabled()) log.trace("Served {}", dish.getName());
+		if (log.isTraceEnabled()) log.trace("Served dish '{}'", dish.getName());
 		try {
 			producer.send(dish);
 		} catch (ProducerDeliveryException ex) {

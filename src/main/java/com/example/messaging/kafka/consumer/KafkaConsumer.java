@@ -20,7 +20,7 @@ public class KafkaConsumer {
 	public void receive(ConsumerRecord<Integer, String> record) {
 		metrics.increment();
 		if (log.isTraceEnabled()) {
-			log.trace("Received message: topic -> {} - partition -> {} - offset -> {} - key -> {} - content -> {}",
+			log.trace("Received message: topic -> '{}' - partition -> '{}' - offset -> '{}' - key -> '{}' - content -> '{}'",
 					record.topic(),
 					record.partition(),
 					record.offset(),

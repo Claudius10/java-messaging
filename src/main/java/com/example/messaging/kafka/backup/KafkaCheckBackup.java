@@ -7,7 +7,6 @@ import com.example.messaging.common.exception.backup.BackupReadException;
 import com.example.messaging.common.metrics.ProducerMetrics;
 import com.example.messaging.common.model.Dish;
 import com.example.messaging.common.producer.Producer;
-import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.producer.impl.MyKafkaProducer;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +25,6 @@ public class KafkaCheckBackup implements BackupCheck {
 
 	private final KafkaTemplate<Long, String> kafkaTemplate;
 
-	private final MyKafkaAdmin myKafkaAdmin;
-
 	private final ProducerMetrics producerMetrics;
 
 	private final BackupProvider<Dish> backupProvider;
@@ -42,7 +39,7 @@ public class KafkaCheckBackup implements BackupCheck {
 			backupProvider.open();
 
 			if (backupProvider.hasMoreElements()) {
-				producer = new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
+				producer = new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate);
 
 				if (producer.isConnected()) {
 
@@ -60,17 +57,17 @@ public class KafkaCheckBackup implements BackupCheck {
 				log.info("No backed up messages found");
 			}
 
-			backupProvider.close();
-			// wait to receive all acks from broker
-			final int waitAcks = kafkaProperties.getProducerBlockMs() + 500;
-			Thread.sleep(waitAcks);
-			producer.close();
-			producerMetrics.print();
+			cleanUp();
 		} catch (BackupProcessException ex) {
-			log.error("Backup processing failed {}", ex.getMessage());
-		} catch (InterruptedException ex) {
-			log.error("Backup processing interrupted {}", ex.getMessage());
+			log.error("Backup processing failed: '{}'", ex.getMessage());
+			cleanUp();
 		}
+	}
+
+	private void cleanUp() {
+		backupProvider.close();
+		producer.close();
+		producerMetrics.print();
 	}
 
 	private void resend(Dish dish) {
@@ -89,7 +86,7 @@ public class KafkaCheckBackup implements BackupCheck {
 		try {
 			dish = backupProvider.read();
 		} catch (BackupReadException ex) {
-			log.error("Unable to read backed up message {}", ex.getMessage());
+			log.error("Unable to read backed up message: '{}'", ex.getMessage());
 		}
 
 		return dish;

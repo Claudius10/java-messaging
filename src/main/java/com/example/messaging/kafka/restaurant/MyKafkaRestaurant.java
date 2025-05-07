@@ -12,7 +12,6 @@ import com.example.messaging.common.task.restaurant.ChefTask;
 import com.example.messaging.common.task.restaurant.ServerTask;
 import com.example.messaging.common.util.MessagingMetric;
 import com.example.messaging.common.util.RestaurantProperties;
-import com.example.messaging.kafka.admin.MyKafkaAdmin;
 import com.example.messaging.kafka.config.KafkaProperties;
 import com.example.messaging.kafka.producer.impl.MyKafkaProducer;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +38,6 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 	private final KafkaProperties kafkaProperties;
 
 	private final KafkaTemplate<Long, String> kafkaTemplate;
-
-	private final MyKafkaAdmin myKafkaAdmin;
 
 	private final BackupProvider<Dish> dishBackupProvider;
 
@@ -98,7 +95,7 @@ public class MyKafkaRestaurant extends BaseMessagingManager implements Messaging
 			return new NoopProducer();
 		}
 
-		return new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate, myKafkaAdmin);
+		return new MyKafkaProducer(kafkaProperties.getTopic(), kafkaTemplate);
 	}
 
 	@Override

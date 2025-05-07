@@ -44,12 +44,10 @@ public class JmsController {
 		try {
 			log.info("Closing JMS restaurant...");
 			myJmsRestaurant.close();
-			// wait for last acks before printing
-			Thread.sleep(2500);
 			producerMetrics.print();
 			return ResponseEntity.ok().build();
 		} catch (InterruptedException e) {
-			log.error("Interrupted with closing JMS Restaurant: {}", e.getMessage());
+			log.error("Interrupted with closing JMS Restaurant: '{}'", e.getMessage());
 			return ResponseEntity.internalServerError().body(e.getMessage());
 		}
 	}

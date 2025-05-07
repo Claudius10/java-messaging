@@ -58,16 +58,17 @@ public class JmsCheckBackup implements BackupCheck {
 				log.info("No backed up messages found");
 			}
 
-			backupProvider.close();
-			// wait to receive all acks from broker
-			Thread.sleep(2500);
-			producer.close();
-			producerMetrics.print();
+			cleanUp();
 		} catch (BackupProcessException ex) {
-			log.error("Backup processing failed {}", ex.getMessage());
-		} catch (InterruptedException ex) {
-			log.error("Backup processing interrupted {}", ex.getMessage());
+			log.error("Backup processing failed '{}'", ex.getMessage());
+			cleanUp();
 		}
+	}
+
+	private void cleanUp() {
+		backupProvider.close();
+		producer.close();
+		producerMetrics.print();
 	}
 
 	private void resend(Dish dish) {
@@ -86,7 +87,7 @@ public class JmsCheckBackup implements BackupCheck {
 		try {
 			dish = backupProvider.read();
 		} catch (BackupReadException ex) {
-			log.error("Unable to read backed up message {}", ex.getMessage());
+			log.error("Unable to read backed up message: '{}'", ex.getMessage());
 		}
 
 		return dish;
