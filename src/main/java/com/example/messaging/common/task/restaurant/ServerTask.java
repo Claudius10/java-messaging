@@ -75,7 +75,7 @@ public class ServerTask implements MessagingTask {
 				}
 			}
 		} catch (InterruptedException ex) {
-			log.warn("Server interrupted: {}", ex.getMessage());
+			log.warn("Server interrupted: '{}'", ex.getMessage());
 			isWorking = false;
 			Thread.currentThread().interrupt();
 		}

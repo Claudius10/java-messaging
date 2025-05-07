@@ -69,14 +69,14 @@ public class ChefTask implements MessagingTask {
 						cook(dish);
 						out++;
 					} catch (IllegalArgumentException | ClassCastException ex) {
-						log.warn("Can't add dish {} to queue: {}", dish.getId(), ex.getMessage());
+						log.warn("Can't add dish '{}' to queue: {}", dish.getId(), ex.getMessage());
 					}
 				} else {
 					handleIdle();
 				}
 			}
 		} catch (InterruptedException ex) {
-			log.warn("Chef interrupted: {}", ex.getMessage());
+			log.warn("Chef interrupted: '{}'", ex.getMessage());
 			isWorking = false;
 			Thread.currentThread().interrupt();
 		}
@@ -85,7 +85,7 @@ public class ChefTask implements MessagingTask {
 	private void cook(Dish dish) throws InterruptedException {
 		dish.setCooked(true);
 		completedDishes.put(dish);
-		if (log.isTraceEnabled()) log.trace("Chef cooked 'dish' {}", dish.getName());
+		if (log.isTraceEnabled()) log.trace("Chef cooked dish '{}'", dish.getName());
 	}
 
 	private void handleIdle() {
