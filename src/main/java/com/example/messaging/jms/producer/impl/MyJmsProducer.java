@@ -51,7 +51,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			doSend(message);
 		} catch (ProducerDeliveryException ex) {
 			producerMetrics.error();
-			log.error("Failed to send message: '{}'", ex.getMessage());
+			log.error("Failed to send message: '{}'", ex.getMessage(), ex);
 			throw ex;
 		}
 	}
@@ -61,7 +61,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			open();
 		} catch (JMSRuntimeException ex) {
 			String message = String.format("Failed to connect to JMS broker: '%s'", ex.getMessage());
-			throw new ProducerClosedException(message);
+			throw new ProducerClosedException(message, ex);
 		}
 	}
 
@@ -83,7 +83,7 @@ public class MyJmsProducer implements Producer<Dish> {
 		} catch (Exception ex) {
 			reconnectIfNecessary(ex);
 			String message = String.format("Failed to create message '%s' with id '%s': '%s'", content, currentMessage, ex.getMessage());
-			throw new ProducerDeliveryException(message);
+			throw new ProducerDeliveryException(message, ex);
 		}
 	}
 
@@ -96,7 +96,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			message.setStringProperty(name, value.toString());
 		} catch (Exception ex) {
 			String errorMessage = String.format("Failed to add property name '%s' and value '%s' to message '%s': '%s'", name, value, currentMessage, ex.getMessage());
-			throw new ProducerDeliveryException(errorMessage);
+			throw new ProducerDeliveryException(errorMessage, ex);
 		}
 	}
 
@@ -106,7 +106,7 @@ public class MyJmsProducer implements Producer<Dish> {
 		} catch (Exception ex) {
 			reconnectIfNecessary(ex);
 			String errorMessage = String.format("Failed to send message '%s' to destination '%s': '%s'", message, destination, ex.getMessage());
-			throw new ProducerSendException(errorMessage);
+			throw new ProducerSendException(errorMessage, ex);
 		}
 	}
 
@@ -158,7 +158,7 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsContext.close();
 			if (log.isTraceEnabled()) log.trace("JMS producer disconnected");
 		} catch (JMSRuntimeException ex) {
-			log.warn("Failed to gracefully close connection: '{}'", ex.getMessage());
+			log.warn("Failed to gracefully close connection: '{}'", ex.getMessage(), ex);
 			this.jmsContext = null;
 			this.jmsProducer = null;
 		}

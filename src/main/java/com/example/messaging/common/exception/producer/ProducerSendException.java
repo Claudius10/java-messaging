@@ -6,6 +6,10 @@ public class ProducerSendException extends ProducerDeliveryException {
 		super(message);
 	}
 
+	public ProducerSendException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 	public ProducerSendException() {
 		super();
 	}

@@ -49,12 +49,12 @@ public class MyCompletionListener implements CompletionListener {
 
 		try {
 			Dish dish = new Dish();
-			dish.setName(textMessage.getText());
+			dish.setName(getMessageText(message));
 			dish.setId(Long.valueOf(textMessage.getStringProperty("id")));
 			dish.setCooked(true);
 			dishBackupProvider.send(dish);
-		} catch (JMSException e) {
-			log.error("Failed to parse dish in order to proceed with back up: '{}'", ex.getMessage());
+		} catch (JMSException parseException) {
+			log.error("Failed to parse dish in order to proceed with back up: '{}'", parseException.getMessage(), parseException);
 			// send notification
 			// send email
 			// call the police
@@ -66,7 +66,7 @@ public class MyCompletionListener implements CompletionListener {
 		try {
 			return ((TextMessage) message).getText();
 		} catch (JMSException ex) {
-			log.error("Failed to parse Message: '{}'", ex.getMessage());
+			log.error("Failed to parse Message: '{}'", ex.getMessage(), ex);
 			return null;
 		}
 	}

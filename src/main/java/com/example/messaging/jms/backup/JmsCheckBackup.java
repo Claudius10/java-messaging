@@ -60,7 +60,7 @@ public class JmsCheckBackup implements BackupCheck {
 
 			cleanUp();
 		} catch (BackupProcessException ex) {
-			log.error("Backup processing failed '{}'", ex.getMessage());
+			log.error("Backup processing failed '{}'", ex.getMessage(), ex);
 			cleanUp();
 		}
 	}
@@ -77,6 +77,7 @@ public class JmsCheckBackup implements BackupCheck {
 			long resent = producerMetrics.resent();
 			if (log.isTraceEnabled()) log.trace("Resent dish '{}' with resentId '{}'", dish.getName(), resent);
 		} catch (Exception ex) {
+			log.error("Failed to resend dish '{}': '{}'", dish.getName(), ex.getMessage(), ex);
 			backupProvider.onFailure(dish);
 		}
 	}
@@ -87,7 +88,7 @@ public class JmsCheckBackup implements BackupCheck {
 		try {
 			dish = backupProvider.read();
 		} catch (BackupReadException ex) {
-			log.error("Unable to read backed up message: '{}'", ex.getMessage());
+			log.error("Unable to read backed up message: '{}'", ex.getMessage(), ex);
 		}
 
 		return dish;

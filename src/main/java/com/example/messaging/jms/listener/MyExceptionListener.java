@@ -9,6 +9,6 @@ public class MyExceptionListener implements ExceptionListener {
 
 	@Override
 	public void onException(JMSException ex) {
-		log.error("Connection error: '{}'", ex.getMessage());
+		log.error("Connection error: '{}'", ex.getMessage(), ex);
 	}
 }

@@ -45,7 +45,7 @@ public class MyProducerListener implements ProducerListener<Long, String> {
 		}
 
 		long error = producerMetrics.error();
-		log.error("Failed to send message '{}' with errorId '{}' to destination '{}:{}': {}", content, error, record.topic(), record.partition(), ex.getMessage());
+		log.error("Failed to send message '{}' with errorId '{}' to destination '{}:{}': {}", content, error, record.topic(), record.partition(), ex.getMessage(), ex);
 		Dish dish = Dish.builder().withId(record.key()).withName(record.value()).withCooked(true).build();
 		dishBackupProvider.send(dish);
 	}

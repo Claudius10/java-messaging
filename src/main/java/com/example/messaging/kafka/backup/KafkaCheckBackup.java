@@ -59,7 +59,7 @@ public class KafkaCheckBackup implements BackupCheck {
 
 			cleanUp();
 		} catch (BackupProcessException ex) {
-			log.error("Backup processing failed: '{}'", ex.getMessage());
+			log.error("Backup processing failed: '{}'", ex.getMessage(), ex);
 			cleanUp();
 		}
 	}
@@ -86,7 +86,7 @@ public class KafkaCheckBackup implements BackupCheck {
 		try {
 			dish = backupProvider.read();
 		} catch (BackupReadException ex) {
-			log.error("Unable to read backed up message: '{}'", ex.getMessage());
+			log.error("Unable to read backed up message: '{}'", ex.getMessage(), ex);
 		}
 
 		return dish;

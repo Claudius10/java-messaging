@@ -33,7 +33,7 @@ public class MockBackupProvider implements BackupProvider<Dish> {
 	public void send(Dish dish) {
 		checkOpen();
 		count.getAndIncrement();
-		log.warn("Backed up dish {}", dish.getName());
+		log.warn("Backed up dish '{}'", dish.getName());
 	}
 
 	@Override

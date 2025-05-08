@@ -6,6 +6,10 @@ public class ProducerClosedException extends ProducerDeliveryException {
 		super(message);
 	}
 
+	public ProducerClosedException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 	public ProducerClosedException() {
 		super();
 	}

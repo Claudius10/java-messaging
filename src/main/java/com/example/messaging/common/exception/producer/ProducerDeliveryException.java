@@ -6,6 +6,10 @@ public class ProducerDeliveryException extends RuntimeException {
 		super(message);
 	}
 
+	public ProducerDeliveryException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 	public ProducerDeliveryException() {
 		super();
 	}
