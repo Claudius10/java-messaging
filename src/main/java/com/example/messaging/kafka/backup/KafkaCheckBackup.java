@@ -57,9 +57,9 @@ public class KafkaCheckBackup implements BackupCheck {
 				log.info("No backed up messages found");
 			}
 
-			cleanUp();
 		} catch (BackupProcessException ex) {
 			log.error("Backup processing failed: '{}'", ex.getMessage(), ex);
+		} finally {
 			cleanUp();
 		}
 	}

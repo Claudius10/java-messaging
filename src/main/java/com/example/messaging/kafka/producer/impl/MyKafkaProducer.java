@@ -41,9 +41,9 @@ public class MyKafkaProducer implements Producer<Dish> {
 		try {
 			// wait for last acks
 			Thread.sleep(2500);
-			closeProducer();
 		} catch (InterruptedException ex) {
 			log.error("Interrupted while waiting for ack before closing producer: '{}'", ex.getMessage());
+		} finally {
 			closeProducer();
 		}
 	}

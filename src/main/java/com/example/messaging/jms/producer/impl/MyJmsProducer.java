@@ -127,10 +127,10 @@ public class MyJmsProducer implements Producer<Dish> {
 			jmsContext = connectionFactory.createContext(jmsProperties.getUser(), jmsProperties.getPassword(), Session.AUTO_ACKNOWLEDGE);
 
 			jmsProducer = jmsContext.createProducer();
-			jmsProducer.setDeliveryMode(DeliveryMode.PERSISTENT);
 			jmsProducer.setAsync(completionListener);
 
-			destination = jmsProperties.getDestination().contains("queue") ? jmsContext.createQueue(jmsProperties.getDestination()) : jmsContext.createTopic(jmsProperties.getDestination());
+			String jmsDestination = jmsProperties.getDestination();
+			destination = jmsDestination.contains("queue") ? jmsContext.createQueue(jmsDestination) : jmsContext.createTopic(jmsDestination);
 
 			open = true;
 			if (log.isTraceEnabled()) log.trace("Connected to JMS broker");
@@ -143,12 +143,12 @@ public class MyJmsProducer implements Producer<Dish> {
 			try {
 				// wait for last acks
 				Thread.sleep(2500);
-				closeProducer();
 			} catch (InterruptedException ex) {
 				log.error("Interrupted while waiting for ack before closing producer: '{}'", ex.getMessage());
+			} finally {
 				closeProducer();
+				open = false;
 			}
-			open = false;
 		}
 	}
 

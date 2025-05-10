@@ -13,11 +13,11 @@ import java.util.Random;
 @Slf4j
 public class MyRestaurantCustomer implements RestaurantCustomer {
 
-	private List<Dish> dishes;
-
 	private final int amountOfDishesToGenerate;
 
 	private final int id;
+
+	private List<Dish> dishes;
 
 	public MyRestaurantCustomer(int amountOfDishesToGenerate, int id) {
 		dishes = new ArrayList<>(amountOfDishesToGenerate);
@@ -56,7 +56,7 @@ public class MyRestaurantCustomer implements RestaurantCustomer {
 			if (log.isTraceEnabled()) log.trace("Customer ordered {} dishes!", amountOfDishesToGenerate);
 
 			for (long i = 0; i < amountOfDishesToGenerate; i++) {
-				Dish dish = Dish.builder().withId(i).withCooked(false).withName("Delicious dish " + id + ":" + i).build();
+				Dish dish = Dish.builder().withId(i).withCooked(false).withName("p-" + id + " Delicious dish " + i).build();
 				dishes.add(dish);
 			}
 		} else {
